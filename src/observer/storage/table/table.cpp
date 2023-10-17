@@ -233,6 +233,58 @@ RC Table::get_record(const RID &rid, Record &record)
   return rc;
 }
 
+RC Table::destroy()
+{
+    RC rc = sync();
+    if(rc != RC::SUCCESS) return rc;
+    // 删除索引的文件
+    for(Index* index : indexes_) {
+        rc = delete_index(nullptr, index);
+        LOG_INFO("Delete index %s on table %s success",index->index_meta().name(),name());
+        if(rc != RC::SUCCESS) {
+            LOG_INFO("Delete index %s on table %s faild",index->index_meta().name(),name());
+            return rc;
+        }
+    }
+
+    // 删除表的文件
+    std::string data_file = table_data_file(base_dir_.c_str(), name());
+    if(unlink(data_file.c_str()) != 0)
+    {
+        LOG_INFO("Delete table %s data failed",name());
+        return RC::NOTFOUND;
+    }
+    else
+    {
+        LOG_INFO("Delete table %s data failed",name());
+        rc = RC::SUCCESS;
+    }
+    std::string meta_file = table_meta_file(base_dir_.c_str(), name());
+    if(unlink(meta_file.c_str()) != 0)
+    {
+        LOG_INFO("Delete table %s meta failed",name());
+        return RC::NOTFOUND;
+    }
+    else
+    {
+        LOG_INFO("Delete table %s meta failed",name());
+        rc = RC::SUCCESS;
+    }
+    return rc;
+
+}
+
+RC Table::delete_index(Trx *trx, Index* index)
+{
+    RC rc = ((BplusTreeIndex*)index)->close();
+    if(rc != RC::SUCCESS) return rc;
+    std::string index_file = table_index_file(base_dir_.c_str(), name(), index->index_meta().name());
+    if(unlink(index_file.c_str()) != 0)
+        return RC::NOTFOUND;
+    else
+        return RC::SUCCESS;
+}
+
 RC Table::recover_insert_record(Record &record)
 {
   RC rc = RC::SUCCESS;

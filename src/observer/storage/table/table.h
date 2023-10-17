@@ -80,10 +80,14 @@ public:
   RC visit_record(const RID &rid, bool readonly, std::function<void(Record &)> visitor);
   RC get_record(const RID &rid, Record &record);
 
+  RC destroy(); // 释放资源
+
   RC recover_insert_record(Record &record);
 
   // TODO refactor
   RC create_index(Trx *trx, const FieldMeta *field_meta, const char *index_name);
+  RC delete_index(Trx *trx, Index* index);
+
 
   RC get_record_scanner(RecordFileScanner &scanner, Trx *trx, bool readonly);
 
