@@ -77,6 +77,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
         INT_T
         STRING_T
         FLOAT_T
+        DATE_T
         HELP
         EXIT
         DOT //QUOTE
@@ -121,6 +122,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
 %token <number> NUMBER
 %token <floats> FLOAT
 %token <string> ID
+%token <string> DATE_STR
 %token <string> SSS
 //非终结符
 
@@ -340,6 +342,7 @@ type:
     INT_T      { $$=INTS; }
     | STRING_T { $$=CHARS; }
     | FLOAT_T  { $$=FLOATS; }
+    | DATE_T   { $$=DATES; }
     ;
 insert_stmt:        /*insert   语句的语法解析树*/
     INSERT INTO ID VALUES LBRACE value value_list RBRACE 
@@ -379,6 +382,21 @@ value:
     |FLOAT {
       $$ = new Value((float)$1);
       @$ = @1;
+    }
+    |DATE_STR {
+        char *tmp = common::substr($1,1,strlen($1)-2);
+        int maxint = 0;
+        maxint = ((~(unsigned int)maxint) << 1) >> 1;
+        int y,m,d;
+        bool isValid;
+        sscanf(tmp, "%d-%d-%d", &y, &m, &d);
+        static int mon[] = {0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+        bool leap = (y%400==0 || (y%100 && y%4==0));
+        isValid =  y > 0 && (m > 0)&&(m <= 12) && (d > 0)&&(d <= ((m==2 && leap)?1:0) + mon[m]);
+        if(!isValid || y > maxint)
+        {printf("FAILURE\n"); return -1;}
+        
+        $$ = new Value(y,m,d);
     }
     |SSS {
       char *tmp = common::substr($1,1,strlen($1)-2);

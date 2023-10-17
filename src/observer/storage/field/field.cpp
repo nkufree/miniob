@@ -19,7 +19,7 @@ See the Mulan PSL v2 for more details. */
 
 void Field::set_int(Record &record, int value)
 {
-  ASSERT(field_->type() == AttrType::INTS, "could not set int value to a non-int field");
+  ASSERT(field_->type() == AttrType::INTS || field_->type() == AttrType::DATES , "could not set int value to a non-int field");
   ASSERT(field_->len() == sizeof(value), "invalid field len");
   
   char *field_data = record.data() + field_->offset();
