@@ -251,12 +251,12 @@ RC Table::destroy()
     std::string data_file = table_data_file(base_dir_.c_str(), name());
     if(unlink(data_file.c_str()) != 0)
     {
-        LOG_INFO("Delete table %s data failed",name());
+        LOG_INFO("Delete table file %s data failed",name());
         return RC::NOTFOUND;
     }
     else
     {
-        LOG_INFO("Delete table %s data failed",name());
+        LOG_INFO("Delete table %s data success",name());
         rc = RC::SUCCESS;
     }
     std::string meta_file = table_meta_file(base_dir_.c_str(), name());
@@ -267,7 +267,7 @@ RC Table::destroy()
     }
     else
     {
-        LOG_INFO("Delete table %s meta failed",name());
+        LOG_INFO("Delete table %s meta success",name());
         rc = RC::SUCCESS;
     }
     return rc;
