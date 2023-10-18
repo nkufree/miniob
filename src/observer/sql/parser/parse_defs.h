@@ -38,6 +38,7 @@ struct RelAttrSqlNode
 {
   std::string relation_name;   ///< relation name (may be NULL) 表名
   std::string attribute_name;  ///< attribute name              属性名
+  std::string aggretype;  ///< aggregate name              聚合函数名
 };
 
 /**
@@ -53,6 +54,15 @@ enum CompOp
   GREAT_EQUAL,  ///< ">="
   GREAT_THAN,   ///< ">"
   NO_OP
+};
+
+enum AggreType
+{
+  FUN_COUNT,
+  SUM,
+  AVG,
+  MAX,
+  MIN
 };
 
 /**
