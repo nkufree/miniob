@@ -500,6 +500,30 @@ RC Table::delete_record(const Record &record)
   return rc;
 }
 
+RC Table::update_record(Record &record, int attr,const Value* value)
+{
+    const int normal_field_start_index = table_meta_.sys_field_num();
+    const FieldMeta *field = table_meta_.field(attr + normal_field_start_index);
+    char *record_data = record.data();
+    size_t copy_len = field->len();
+    if (field->type() == CHARS) {
+      const size_t data_len = value->length();
+      if (copy_len > data_len) {
+        copy_len = data_len + 1;
+      }
+    }
+    // 更新索引
+    for (Index *index : indexes_) {
+        if(strcmp(index->index_meta().name(),field->name()) != 0)
+            continue;
+        index->delete_entry(record_data,&record.rid());
+        index->insert_entry(record_data,&record.rid());
+        break;
+    }
+    memcpy(record_data + field->offset(), value->data(), copy_len);
+    return RC::SUCCESS;
+}
+
 RC Table::insert_entry_of_indexes(const char *record, const RID &rid)
 {
   RC rc = RC::SUCCESS;
