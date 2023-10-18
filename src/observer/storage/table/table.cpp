@@ -512,6 +512,14 @@ RC Table::update_record(Record &record, int attr,const Value* value)
         copy_len = data_len + 1;
       }
     }
+    // 更新索引
+    for (Index *index : indexes_) {
+        if(strcmp(index->index_meta().name(),field->name()) != 0)
+            continue;
+        index->delete_entry(record_data,&record.rid());
+        index->insert_entry(record_data,&record.rid());
+        break;
+    }
     memcpy(record_data + field->offset(), value->data(), copy_len);
     return RC::SUCCESS;
 }

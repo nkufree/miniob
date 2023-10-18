@@ -47,7 +47,7 @@ RC UpdateStmt::create(Db *db, const UpdateSqlNode &update, Stmt *&stmt)
   int i = 0;
   for (i = 0; i < field_num; i++) {
     const FieldMeta *field_meta = table_meta.field(i + sys_field_num);
-    if(!strcmp(field_meta->name(),attr.c_str()))
+    if(strcmp(field_meta->name(),attr.c_str()) != 0)
         continue;
     const AttrType field_type = field_meta->type();
     const AttrType value_type = values->attr_type();
@@ -76,6 +76,6 @@ RC UpdateStmt::create(Db *db, const UpdateSqlNode &update, Stmt *&stmt)
     LOG_WARN("failed to create filter statement. rc=%d:%s", rc, strrc(rc));
     return rc;
   }
-  stmt = new UpdateStmt(table, i - 1, values, filter_stmt);
+  stmt = new UpdateStmt(table, i, values, filter_stmt);
   return RC::SUCCESS;
 }
