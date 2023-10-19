@@ -141,7 +141,8 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
 %type <value_list>          value_list
 %type <condition_list>      where
 %type <condition_list>      condition_list
-%type <condition>      on_condition
+%type <condition_list>      on_condition_list
+%type <condition_list>      on_condition
 %type <rel_attr_list>       select_attr
 %type <relation_list>       rel_list
 %type <join_list>           join_list
@@ -491,12 +492,27 @@ calc_stmt:
     }
     ;
 
+on_condition_list:
+    condition
+    {
+        $$ = new vector<ConditionSqlNode>;
+        $$->push_back(*$1);
+        delete $1;
+    }
+    | condition AND on_condition_list
+    {
+        $$ = $3;
+        $$->push_back(*$1);
+        delete $1;
+    }
+    ;
+
 on_condition:
     /* empty */
     {
         $$ = nullptr;
     }
-    | ON condition {
+    | ON on_condition_list {
         $$ = $2;
     }
     ;
@@ -511,7 +527,7 @@ join_list:
         if($4 != nullptr)
         {
             $$->second = new std::vector<ConditionSqlNode>;
-            $$->second->push_back(*$4);
+            $$->second->insert($$->second->end(),$4->begin(),$4->end());
             delete $4;
         }
         else
@@ -528,10 +544,10 @@ join_list:
             if($$->second == nullptr)
             {
                 $$->second = new std::vector<ConditionSqlNode>;
-                $$->second->push_back(*$4);
+                $$->second->insert($$->second->end(),$4->begin(),$4->end());
             }
             else
-                $$->second->push_back(*$4);
+                $$->second->insert($$->second->end(),$4->begin(),$4->end());
             delete $4;
         }
         free($3);
