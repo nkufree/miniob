@@ -187,7 +187,6 @@ RC SelectStmt::create(Db *db, const SelectSqlNode &select_sql, Stmt *&stmt)
     return rc;
   }
   }
-  
 
     if(select_sql.type == SelectSqlNode::select_type::INNER_JOIN && select_sql.conditions.size() != 0)
     {

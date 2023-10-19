@@ -119,6 +119,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
   char *                            string;
   int                               number;
   float                             floats;
+  std::pair<std::vector<std::string>*,std::vector<ConditionSqlNode> *>* join_list;
 }
 
 %token <number> NUMBER
@@ -140,10 +141,10 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
 %type <value_list>          value_list
 %type <condition_list>      where
 %type <condition_list>      condition_list
-%type <condition_list>      on_condition
+%type <condition>      on_condition
 %type <rel_attr_list>       select_attr
 %type <relation_list>       rel_list
-%type <relation_list>       join_list
+%type <join_list>           join_list
 %type <rel_attr_list>       attr_list
 %type <expression>          expression
 %type <expression_list>     expression_list
@@ -458,24 +459,25 @@ select_stmt:        /*  select 语句的语法解析树*/
       }
       free($4);
     }
-    | SELECT select_attr FROM ID inner_join_comm join_list on_condition
+    | SELECT select_attr FROM ID join_list
     {
         $$ = new ParsedSqlNode(SCF_SELECT);
         if ($2 != nullptr) {
             $$->selection.attributes.swap(*$2);
             delete $2;
         }
-        if ($7 != nullptr) {
-            $$->selection.relations.swap(*$7);
-            delete $7;
+        if ($5 != nullptr) {
+            $$->selection.relations.swap(*($5->first));
+            delete $5->first;
         }
     $$->selection.relations.push_back($4);
     std::reverse($$->selection.relations.begin(), $$->selection.relations.end());
       $$->selection.type = SelectSqlNode::select_type::INNER_JOIN;
-    if ($8 != nullptr) {
-        $$->selection.conditions.swap(*$8);
-        delete $8;
+    if ($5->second != nullptr) {
+        $$->selection.conditions.swap(*($5->second));
+        delete $5->second;
     }
+    free($5);
     free($4);
     }
     ;
@@ -489,32 +491,50 @@ calc_stmt:
     }
     ;
 
-inner_join_comm:
-    INNER JOIN
-    |   JOIN
-    ;
-
 on_condition:
     /* empty */
     {
         $$ = nullptr;
     }
-    | ON condition_list {
+    | ON condition {
         $$ = $2;
     }
     ;
 
 
 join_list:
-    ID
+    INNER JOIN ID on_condition
     {
-        $$ = new std::vector<string>;
-        $$->push_back($1);
+        $$ = new std::pair<std::vector<std::string>*,std::vector<ConditionSqlNode> *>;
+        $$->first = new std::vector<std::string>;
+        $$->first->push_back($3);
+        if($4 != nullptr)
+        {
+            $$->second = new std::vector<ConditionSqlNode>;
+            $$->second->push_back(*$4);
+            delete $4;
+        }
+        else
+        {
+            $$->second = nullptr;
+        }
+        free($3);
     }
-    | ID INNER JOIN join_list {
-        $$ = $4;
-        $$->push_back($1);
-        free($1);
+    | INNER JOIN ID on_condition join_list {
+        $$ = $5;
+        $$->first->push_back($3);
+        if($4 != nullptr)
+        {
+            if($$->second == nullptr)
+            {
+                $$->second = new std::vector<ConditionSqlNode>;
+                $$->second->push_back(*$4);
+            }
+            else
+                $$->second->push_back(*$4);
+            delete $4;
+        }
+        free($3);
     }
     ;
 

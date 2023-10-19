@@ -132,8 +132,9 @@ union YYSTYPE
   char *                            string;
   int                               number;
   float                             floats;
+  std::pair<std::vector<std::string>*,std::vector<ConditionSqlNode> *>* join_list;
 
-#line 137 "yacc_sql.hpp"
+#line 138 "yacc_sql.hpp"
 
 };
 typedef union YYSTYPE YYSTYPE;
