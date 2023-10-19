@@ -57,9 +57,13 @@ public:
   {
     return filter_stmt_;
   }
-
+    SelectSqlNode::select_type select_type() const
+    {
+        return select_type_;
+    }
 private:
   std::vector<Field> query_fields_;
   std::vector<Table *> tables_;
   FilterStmt *filter_stmt_ = nullptr;
+  SelectSqlNode::select_type select_type_;
 };
