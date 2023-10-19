@@ -188,25 +188,25 @@ RC SelectStmt::create(Db *db, const SelectSqlNode &select_sql, Stmt *&stmt)
   }
   }
 
-    if(select_sql.type == SelectSqlNode::select_type::INNER_JOIN && select_sql.conditions.size() != 0)
-    {
-        std::vector<FilterUnit *> funits = filter_stmt->filter_units();
-        for(FilterUnit* fu : funits)
-        {
-            if(fu->right().is_attr)
-            {
-                for(auto it = query_fields.begin(); it != query_fields.end(); it++)
-                {
-                    if(strcmp((*it).table_name(), fu->right().field.table_name()) == 0
-                    && strcmp((*it).field_name(), fu->right().field.field_name()) == 0)
-                    {
-                        query_fields.erase(it);
-                        break;
-                    }
-                }
-            }
-        }
-    }
+    // if(select_sql.type == SelectSqlNode::select_type::INNER_JOIN && select_sql.conditions.size() != 0)
+    // {
+    //     std::vector<FilterUnit *> funits = filter_stmt->filter_units();
+    //     for(FilterUnit* fu : funits)
+    //     {
+    //         if(fu->right().is_attr)
+    //         {
+    //             for(auto it = query_fields.begin(); it != query_fields.end(); it++)
+    //             {
+    //                 if(strcmp((*it).table_name(), fu->right().field.table_name()) == 0
+    //                 && strcmp((*it).field_name(), fu->right().field.field_name()) == 0)
+    //                 {
+    //                     query_fields.erase(it);
+    //                     break;
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
   // everything alright
   SelectStmt *select_stmt = new SelectStmt();
   // TODO add expression copy
