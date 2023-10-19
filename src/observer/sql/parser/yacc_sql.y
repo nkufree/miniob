@@ -460,7 +460,7 @@ select_stmt:        /*  select 语句的语法解析树*/
       }
       free($4);
     }
-    | SELECT select_attr FROM ID join_list
+    | SELECT select_attr FROM ID join_list where
     {
         $$ = new ParsedSqlNode(SCF_SELECT);
         if ($2 != nullptr) {
@@ -471,12 +471,17 @@ select_stmt:        /*  select 语句的语法解析树*/
             $$->selection.relations.swap(*($5->first));
             delete $5->first;
         }
+
     $$->selection.relations.push_back($4);
     std::reverse($$->selection.relations.begin(), $$->selection.relations.end());
       $$->selection.type = SelectSqlNode::select_type::INNER_JOIN;
     if ($5->second != nullptr) {
         $$->selection.conditions.swap(*($5->second));
         delete $5->second;
+    }
+    if ($6 != nullptr) {
+        $$->selection.conditions.insert($$->selection.conditions.end(),$6->begin(),$6->end());
+        delete $6;
     }
     free($5);
     free($4);
