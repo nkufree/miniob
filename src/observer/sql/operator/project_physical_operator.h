@@ -52,4 +52,7 @@ public:
 
 private:
   ProjectTuple tuple_;
+  std::map<TupleCellSpec*, AggreType> specToAggre_;
+  std::map<TupleCellSpec *, Value> specToValue_;
+
 };

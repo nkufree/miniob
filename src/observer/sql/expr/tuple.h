@@ -259,6 +259,11 @@ public:
 
   RC cell_at(int index, Value &cell) const override
   {
+    if(specToAggre_->size() != 0)
+      {
+        cell = (*specToAggre_)[speces_[index]];
+        return RC::SUCCESS;
+      }
     if (index < 0 || index >= static_cast<int>(speces_.size())) {
       return RC::INTERNAL;
     }
@@ -272,7 +277,23 @@ public:
 
   RC find_cell(const TupleCellSpec &spec, Value &cell) const override
   {
+    auto it = specToAggre_->find(const_cast<TupleCellSpec *>(&spec));
+    if(it != specToAggre_->end())
+    {
+      cell = it->second;
+      return RC::SUCCESS;
+    }
     return tuple_->find_cell(spec, cell);
+  }
+
+  std::vector<TupleCellSpec *> get_speces() const
+  {
+    return speces_;
+  }
+
+  void set_spec_aggre(std::map<TupleCellSpec *, Value>* specToAggre)
+  {
+    specToAggre_ = specToAggre;
   }
 
 #if 0
@@ -288,6 +309,7 @@ public:
 private:
   std::vector<TupleCellSpec *> speces_;
   Tuple *tuple_ = nullptr;
+  std::map<TupleCellSpec *, Value>* specToAggre_;
 };
 
 class ExpressionTuple : public Tuple 

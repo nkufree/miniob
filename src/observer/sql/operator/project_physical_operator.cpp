@@ -29,13 +29,83 @@ RC ProjectPhysicalOperator::open(Trx *trx)
     LOG_WARN("failed to open child operator: %s", strrc(rc));
     return rc;
   }
-
+  if(specToAggre_.size() == 0)
+  {
+    return RC::SUCCESS;
+  }
+  const std::vector<TupleCellSpec *>& speces = tuple_.get_speces();
+  int num = 0;
+  if(RC::SUCCESS == child->next())
+  {
+    num++;
+    Tuple *tuple = child->current_tuple();
+    for(auto spec : speces)
+    {
+      Value cell;
+      tuple->find_cell(*spec, cell);
+      switch(specToAggre_[spec]) {
+        case SYS_SUM: {
+          specToValue_[spec] = Value(1);
+        } break;
+        default : {
+          specToValue_[spec] = cell;
+        }
+      }
+    }
+  }
+  while(RC::SUCCESS == child->next()) {
+    num++;
+    Tuple *tuple = child->current_tuple();
+    for(auto spec : speces)
+    {
+      Value cell;
+      tuple->find_cell(*spec, cell);
+      switch(specToAggre_[spec])
+      {
+        case SYS_MAX:{
+          cell.compare(specToValue_[spec]) > 0 ? specToValue_[spec] = cell : specToValue_[spec];
+        } break;
+        case SYS_MIN:{
+          cell.compare(specToValue_[spec]) < 0 ? specToValue_[spec] = cell : specToValue_[spec];
+        } break;
+        case SYS_COUNT:{
+          specToValue_[spec].set_int(specToValue_[spec].get_int() + 1);
+        } break;
+        case SYS_AVG:
+        case SYS_SUM: {
+          if(cell.attr_type() == INTS)
+          {
+            specToValue_[spec].set_int(specToValue_[spec].get_int() + cell.get_int());
+          }
+          else if(cell.attr_type() == FLOATS)
+          {
+            specToValue_[spec].set_float(specToValue_[spec].get_float() + cell.get_float());
+          }
+        } break;
+      }
+    }
+  }
+  for(auto spec : speces)
+  {
+    if(specToAggre_[spec] == SYS_AVG)
+    {
+      if(specToValue_[spec].attr_type() == INTS)
+      {
+        specToValue_[spec].set_float(specToValue_[spec].get_int() / num);
+      }
+      else if(specToValue_[spec].attr_type() == FLOATS)
+      {
+        specToValue_[spec].set_float(specToValue_[spec].get_float() / num);
+      }
+    }
+  }
+  tuple_.set_spec_aggre(&specToValue_);
   return RC::SUCCESS;
 }
 
 RC ProjectPhysicalOperator::next()
 {
-  if (children_.empty()) {
+  if (children_.empty() || specToAggre_.size() == 0) {
     return RC::RECORD_EOF;
   }
   return children_[0]->next();
@@ -50,6 +120,10 @@ RC ProjectPhysicalOperator::close()
 }
 Tuple *ProjectPhysicalOperator::current_tuple()
 {
+  if(specToAggre_.size() == 0)
+  {
+    return &tuple_;
+  }
   tuple_.set_tuple(children_[0]->current_tuple());
   return &tuple_;
 }
@@ -60,4 +134,5 @@ void ProjectPhysicalOperator::add_projection(const Table *table, const FieldMeta
   // 对多表查询来说，展示的alias 需要带表名字
   TupleCellSpec *spec = new TupleCellSpec(table->name(), field_meta->name(), field_meta->name());
   tuple_.add_cell_spec(spec);
+  specToAggre_[spec];
 }
