@@ -124,6 +124,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
   char *                            string;
   int                               number;
   float                             floats;
+  enum AggreType                    aggretype;
 }
 
 %token <number> NUMBER
@@ -135,7 +136,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
 
 /** type 定义了各种解析后的结果输出的是什么类型。类型对应了 union 中的定义的成员变量名称 **/
 %type <number>              type
-%type <number>              aggretype
+%type <aggretype>           aggretype
 %type <condition>           condition
 %type <value>               value
 %type <number>              number
@@ -552,7 +553,6 @@ rel_attr:
       $$->attribute_name = $3->attribute_name;
       $$->relation_name  = $3->relation_name;
       $$->aggretype = $1;
-      delete $3;
     }
     ;
 
@@ -675,11 +675,11 @@ comp_op:
     ;
 
 aggretype:
-	  COUNT { $$ = FUN_COUNT; }
-	| MIN {	$$ = MIN;	}
-	| MAX {	$$ = MAX;	}
-	| AVG {	$$ = AVG;	}
-	| SUM {	$$ = SUM;	}
+	  COUNT { $$ = SYS_COUNT; }
+	| MIN {	$$ = SYS_MIN;	}
+	| MAX {	$$ = SYS_MAX;	}
+	| AVG {	$$ = SYS_AVG;	}
+	| SUM {	$$ = SYS_SUM;	}
 	;
 
 load_data_stmt:

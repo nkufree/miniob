@@ -137,8 +137,9 @@ union YYSTYPE
   char *                            string;
   int                               number;
   float                             floats;
+  enum AggreType                    aggretype;
 
-#line 142 "yacc_sql.hpp"
+#line 143 "yacc_sql.hpp"
 
 };
 typedef union YYSTYPE YYSTYPE;

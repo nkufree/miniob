@@ -1,5 +1,5 @@
 /* Copyright (c) 2021 OceanBase and/or its affiliates. All rights reserved.
-miniob is licensed under Mulan PSL v2.
+SYS_MINiob is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
 You may obtain a copy of Mulan PSL v2 at:
          http://license.coscl.org.cn/MulanPSL2
@@ -101,26 +101,25 @@ RC SelectStmt::create(Db *db, const SelectSqlNode &select_sql, Stmt *&stmt)
           return RC::SCHEMA_FIELD_MISSING;
         }
         query_fields.push_back(Field(table, field_meta));
-        if(0 == strcmp(relation_attr.aggretype.c_str(), "MAX"))
+        
+        switch (relation_attr.aggretype)
         {
-          aggretype.push_back("MAX");
-        }
-        else if(0 == strcmp(relation_attr.aggretype.c_str(), "MIN"))
-        {
-          aggretype.push_back("MIN");
-        }
-        else if(0 == strcmp(relation_attr.aggretype.c_str(), "COUNT"))
-        {
-          aggretype.push_back("COUNT");
-        }
-        else if(0 == strcmp(relation_attr.aggretype.c_str(), "AVG"))
-        {
-          aggretype.push_back("AVG");
-        }
-        else if(0 == strcmp(relation_attr.aggretype.c_str(), "SUM"))
-        {
-          aggretype.push_back("SUM");
-        }
+          case SYS_MAX:
+            aggretype.push_back("SYS_MAX");
+            break;
+          case SYS_MIN:
+            aggretype.push_back("SYS_MIN");
+            break;
+          case SYS_COUNT:
+            aggretype.push_back("SYS_COUNT");
+            break; 
+          case SYS_AVG:
+            aggretype.push_back("SYS_AVG");
+            break;
+          case SYS_SUM:
+            aggretype.push_back("SYS_SUM");
+            break;
+        };
       }
     }
     else if(!common::is_blank(relation_attr.relation_name.c_str()))
@@ -152,9 +151,9 @@ RC SelectStmt::create(Db *db, const SelectSqlNode &select_sql, Stmt *&stmt)
         if (0 == strcmp(field_name, "*")) 
         {
           wildcard_fields(table, query_fields);
-          if(0 == strcmp(relation_attr.aggretype.c_str(), "COUNT"))
+          if(relation_attr.aggretype == SYS_COUNT)
           {
-            aggretype.push_back("COUNT");
+            aggretype.push_back("SYS_COUNT");
           }
         } 
         else 
@@ -166,26 +165,24 @@ RC SelectStmt::create(Db *db, const SelectSqlNode &select_sql, Stmt *&stmt)
           }
 
           query_fields.push_back(Field(table, field_meta));
-          if(0 == strcmp(relation_attr.aggretype.c_str(), "MAX"))
+          switch (relation_attr.aggretype)
           {
-            aggretype.push_back("MAX");
-          }
-          else if(0 == strcmp(relation_attr.aggretype.c_str(), "MIN"))
-          {
-            aggretype.push_back("MIN");
-          }
-          else if(0 == strcmp(relation_attr.aggretype.c_str(), "COUNT"))
-          {
-            aggretype.push_back("COUNT");
-          }
-          else if(0 == strcmp(relation_attr.aggretype.c_str(), "AVG"))
-          {
-            aggretype.push_back("AVG");
-          }
-          else if(0 == strcmp(relation_attr.aggretype.c_str(), "SUM"))
-          {
-            aggretype.push_back("SUM");
-          }
+            case SYS_MAX:
+              aggretype.push_back("SYS_MAX");
+              break;
+            case SYS_MIN:
+              aggretype.push_back("SYS_MIN");
+              break;
+            case SYS_COUNT:
+              aggretype.push_back("SYS_COUNT");
+              break; 
+            case SYS_AVG:
+              aggretype.push_back("SYS_AVG");
+              break;
+            case SYS_SUM:
+              aggretype.push_back("SYS_SUM");
+              break;
+          };
         }
       }
     }
@@ -205,26 +202,24 @@ RC SelectStmt::create(Db *db, const SelectSqlNode &select_sql, Stmt *&stmt)
       }
 
       query_fields.push_back(Field(table, field_meta));
-      if(0 == strcmp(relation_attr.aggretype.c_str(), "MAX"))
+      switch (relation_attr.aggretype)
       {
-        aggretype.push_back("MAX");
-      }
-      else if(0 == strcmp(relation_attr.aggretype.c_str(), "MIN"))
-      {
-        aggretype.push_back("MIN");
-      }
-      else if(0 == strcmp(relation_attr.aggretype.c_str(), "COUNT"))
-      {
-        aggretype.push_back("COUNT");
-      }
-      else if(0 == strcmp(relation_attr.aggretype.c_str(), "AVG"))
-      {
-        aggretype.push_back("AVG");
-      }
-      else if(0 == strcmp(relation_attr.aggretype.c_str(), "SUM"))
-      {
-        aggretype.push_back("SUM");
-      }
+        case SYS_MAX:
+          aggretype.push_back("SYS_MAX");
+          break;
+        case SYS_MIN:
+          aggretype.push_back("SYS_MIN");
+          break;
+        case SYS_COUNT:
+          aggretype.push_back("SYS_COUNT");
+          break; 
+        case SYS_AVG:
+          aggretype.push_back("SYS_AVG");
+          break;
+        case SYS_SUM:
+          aggretype.push_back("SYS_SUM");
+          break;
+      };
     }
     // else if (!common::is_blank(relation_attr.relation_name.c_str())) {
     //   const char *table_name = relation_attr.relation_name.c_str();
