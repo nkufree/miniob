@@ -19,6 +19,8 @@ See the Mulan PSL v2 for more details. */
 #include "common/lang/comparator.h"
 #include "common/lang/string.h"
 
+#define CALC_TYPE_SIZE(t) (sizeof(t) + 1)
+
 const char *ATTR_TYPE_NAME[] = {"undefined", "chars", "ints", "dates", "floats", "booleans"};
 
 const char *attr_type_to_string(AttrType type)
@@ -65,6 +67,7 @@ Value::Value(const char *s, int len /*= 0*/)
 
 void Value::set_data(char *data, int length)
 {
+    is_null_ = (bool)data[length-1];
   switch (attr_type_) {
     case CHARS: {
       set_string(data, length);
@@ -92,39 +95,45 @@ void Value::set_data(char *data, int length)
 }
 void Value::set_int(int val)
 {
+    is_null_ = false;
   attr_type_ = INTS;
   num_value_.int_value_ = val;
-  length_ = sizeof(val);
+  length_ = CALC_TYPE_SIZE(val);
 }
 
 void Value::set_date(int val)
 {
+    is_null_ = false;
     attr_type_ = DATES;
     num_value_.int_value_ = val;
-    length_ = sizeof(val);
+    length_ = CALC_TYPE_SIZE(val);
 }
 
 void Value::set_date(int y, int m, int d)
 {
+    is_null_ = false;
   attr_type_ = DATES;
   num_value_.int_value_ = y * 10000 + m * 100 + d;
-  length_ = sizeof(num_value_.int_value_);
+  length_ = CALC_TYPE_SIZE(num_value_.int_value_);
 }
 
 void Value::set_float(float val)
 {
+    is_null_ = false;
   attr_type_ = FLOATS;
   num_value_.float_value_ = val;
-  length_ = sizeof(val);
+  length_ = CALC_TYPE_SIZE(val);
 }
 void Value::set_boolean(bool val)
 {
+    is_null_ = false;
   attr_type_ = BOOLEANS;
   num_value_.bool_value_ = val;
-  length_ = sizeof(val);
+  length_ = CALC_TYPE_SIZE(val);
 }
 void Value::set_string(const char *s, int len /*= 0*/)
 {
+    is_null_ = false;
   attr_type_ = CHARS;
   if (len > 0) {
     len = strnlen(s, len);
@@ -132,7 +141,7 @@ void Value::set_string(const char *s, int len /*= 0*/)
   } else {
     str_value_.assign(s);
   }
-  length_ = str_value_.length();
+  length_ = str_value_.length() + 1;
 }
 
 void Value::set_value(const Value &value)
@@ -154,9 +163,11 @@ void Value::set_value(const Value &value)
         set_date(value.get_int());
     }
     case UNDEFINED: {
+        if(value.is_null()) break;
       ASSERT(false, "got an invalid value type");
     } break;
   }
+  is_null_ = value.is_null();
 }
 
 const char *Value::data() const
@@ -174,6 +185,10 @@ const char *Value::data() const
 std::string Value::to_string() const
 {
   std::stringstream os;
+  if(is_null_) {
+    os << "NULL";
+    return os.str();
+  }
   switch (attr_type_) {
     case INTS: {
       os << num_value_.int_value_;

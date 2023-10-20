@@ -100,6 +100,8 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
         NE
         INNER
         JOIN
+        NOT
+        NULL_T
 
 /** union 中定义各种数据类型，真实生成的代码也是union类型，所以不能有非POD类型的数据 **/
 %union {
@@ -120,6 +122,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
   int                               number;
   float                             floats;
   std::pair<std::vector<std::string>*,std::vector<ConditionSqlNode> *>* join_list;
+    bool                            type_allow_null;
 }
 
 %token <number> NUMBER
@@ -172,6 +175,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
 %type <sql_node>            command_wrapper
 // commands should be a list but I use a single command instead
 %type <sql_node>            commands
+%type <type_allow_null>     field_allow_null
 
 %left '+' '-'
 %left '*' '/'
@@ -324,23 +328,31 @@ attr_def_list:
     ;
     
 attr_def:
-    ID type LBRACE number RBRACE 
+    ID type LBRACE number RBRACE field_allow_null
     {
       $$ = new AttrInfoSqlNode;
       $$->type = (AttrType)$2;
       $$->name = $1;
-      $$->length = $4;
+      $$->length = $4+1;
+      $$->allow_null = $6;
       free($1);
     }
-    | ID type
+    | ID type field_allow_null
     {
       $$ = new AttrInfoSqlNode;
       $$->type = (AttrType)$2;
       $$->name = $1;
-      $$->length = 4;
+      $$->length = 4+1;
+      $$->allow_null = $3;
       free($1);
     }
     ;
+
+field_allow_null:
+    /* empty */
+    { $$ = true; }
+     | NOT NULL_T { $$ = false; }
+
 number:
     NUMBER {$$ = $1;}
     ;
@@ -403,6 +415,10 @@ value:
             yyerror(&(yyloc), sql_string, sql_result, scanner, "FAILURE\n");
         
         $$ = new Value(y,m,d);
+    }
+    | NULL_T {
+        $$ = new Value();
+      @$ = @1;
     }
     |SSS {
       char *tmp = common::substr($1,1,strlen($1)-2);

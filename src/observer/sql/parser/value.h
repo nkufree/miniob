@@ -40,7 +40,7 @@ AttrType attr_type_from_string(const char *s);
 class Value 
 {
 public:
-  Value() = default;
+  Value():attr_type_(UNDEFINED),is_null_(true){}
 
   Value(AttrType attr_type, char *data, int length = 4) : attr_type_(attr_type)
   {
@@ -71,6 +71,7 @@ public:
   void set_float(float val);
   void set_boolean(bool val);
   void set_string(const char *s, int len = 0);
+  void set_null(bool n) {is_null_ = n;}
   void set_value(const Value &value);
 
   std::string to_string() const;
@@ -87,7 +88,10 @@ public:
   {
     return attr_type_;
   }
-
+    bool is_null() const 
+    {
+        return is_null_;
+    }
 public:
   /**
    * 获取对应的值
@@ -107,5 +111,6 @@ private:
     float float_value_;
     bool bool_value_;
   } num_value_;
+  bool is_null_;
   std::string str_value_;
 };

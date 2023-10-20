@@ -88,6 +88,11 @@ ComparisonExpr::~ComparisonExpr()
 
 RC ComparisonExpr::compare_value(const Value &left, const Value &right, bool &result) const
 {
+    if(left.is_null() || right.is_null())
+    {
+        result = false;
+        return RC::SUCCESS;
+    }
   RC rc = RC::SUCCESS;
   int cmp_result = left.compare(right);
   result = false;

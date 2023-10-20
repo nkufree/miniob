@@ -332,7 +332,7 @@ RC Table::make_record(int value_num, const Value *values, Record &record)
   for (int i = 0; i < value_num; i++) {
     const FieldMeta *field = table_meta_.field(i + normal_field_start_index);
     const Value &value = values[i];
-    if (field->type() != value.attr_type()) {
+    if (field->type() != value.attr_type() && (!value.is_null())) {
       LOG_ERROR("Invalid value type. table name =%s, field name=%s, type=%d, but given=%d",
                 table_meta_.name(), field->name(), field->type(), value.attr_type());
       return RC::SCHEMA_FIELD_TYPE_MISMATCH;
@@ -347,13 +347,22 @@ RC Table::make_record(int value_num, const Value *values, Record &record)
     const FieldMeta *field = table_meta_.field(i + normal_field_start_index);
     const Value &value = values[i];
     size_t copy_len = field->len();
-    if (field->type() == CHARS) {
+    if (field->type() == CHARS && (!value.is_null())) {
       const size_t data_len = value.length();
       if (copy_len > data_len) {
-        copy_len = data_len + 1;
+        copy_len = data_len + 2;
       }
     }
-    memcpy(record_data + field->offset(), value.data(), copy_len);
+    if(value.is_null())
+    {
+        memset(record_data + field->offset(), 0, copy_len - 1);
+        memset(record_data + field->offset()+copy_len - 1, 1, 1);
+    }
+    else
+    {
+        memcpy(record_data + field->offset(), value.data(), copy_len - 1);
+        memset(record_data + field->offset()+copy_len - 1, 0, 1);
+    }
   }
 
   record.set_data_owner(record_data, record_size);
