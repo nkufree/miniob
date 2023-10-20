@@ -132,7 +132,51 @@ RC SelectStmt::create(Db *db, const SelectSqlNode &select_sql, Stmt *&stmt)
 
   // create filter statement in `where` statement
   FilterStmt *filter_stmt = nullptr;
-  RC rc = FilterStmt::create(db,
+  if(select_sql.conditions.size() == 0 && select_sql.type == SelectSqlNode::select_type::INNER_JOIN)
+  {
+    std::vector<ConditionSqlNode> select_node;
+    std::map<std::string,std::vector<Field>> tmp;
+    for(Field f : query_fields)
+    {
+        tmp[std::string(f.field_name())].push_back(f);
+    }
+    query_fields.clear();
+    for(auto p : tmp)
+    {
+        query_fields.push_back(p.second.front());
+    }
+    for(auto &p : tmp)
+    {
+        if(p.second.size() != 1)
+        {
+            Field first_field = p.second.front();
+            p.second.erase(p.second.begin());
+            for(Field f : p.second)
+            {
+                ConditionSqlNode cnnode;
+                cnnode.comp = EQUAL_TO;
+                cnnode.left_attr = {first_field.table_name(), first_field.field_name()};
+                cnnode.right_attr = {f.table_name(), f.field_name()};
+                cnnode.left_is_attr = true;
+                cnnode.right_is_attr = true;
+                select_node.push_back(cnnode);
+            }
+        }
+        
+    }
+    RC rc = FilterStmt::create(db,
+      default_table,
+      &table_map,
+      select_node.data(),
+      static_cast<int>(select_node.size()),
+      filter_stmt);
+      if (rc != RC::SUCCESS) {
+    LOG_WARN("cannot construct filter stmt");
+    return rc;
+    }
+  }
+  else{
+    RC rc = FilterStmt::create(db,
       default_table,
       &table_map,
       select_sql.conditions.data(),
@@ -142,10 +186,31 @@ RC SelectStmt::create(Db *db, const SelectSqlNode &select_sql, Stmt *&stmt)
     LOG_WARN("cannot construct filter stmt");
     return rc;
   }
+  }
 
+    // if(select_sql.type == SelectSqlNode::select_type::INNER_JOIN && select_sql.conditions.size() != 0)
+    // {
+    //     std::vector<FilterUnit *> funits = filter_stmt->filter_units();
+    //     for(FilterUnit* fu : funits)
+    //     {
+    //         if(fu->right().is_attr)
+    //         {
+    //             for(auto it = query_fields.begin(); it != query_fields.end(); it++)
+    //             {
+    //                 if(strcmp((*it).table_name(), fu->right().field.table_name()) == 0
+    //                 && strcmp((*it).field_name(), fu->right().field.field_name()) == 0)
+    //                 {
+    //                     query_fields.erase(it);
+    //                     break;
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
   // everything alright
   SelectStmt *select_stmt = new SelectStmt();
   // TODO add expression copy
+  select_stmt->select_type_ = select_sql.type;
   select_stmt->tables_.swap(tables);
   select_stmt->query_fields_.swap(query_fields);
   select_stmt->filter_stmt_ = filter_stmt;

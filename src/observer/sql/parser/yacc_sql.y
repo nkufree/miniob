@@ -98,6 +98,8 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
         LE
         GE
         NE
+        INNER
+        JOIN
 
 /** union 中定义各种数据类型，真实生成的代码也是union类型，所以不能有非POD类型的数据 **/
 %union {
@@ -117,6 +119,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
   char *                            string;
   int                               number;
   float                             floats;
+  std::pair<std::vector<std::string>*,std::vector<ConditionSqlNode> *>* join_list;
 }
 
 %token <number> NUMBER
@@ -138,8 +141,11 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
 %type <value_list>          value_list
 %type <condition_list>      where
 %type <condition_list>      condition_list
+%type <condition_list>      on_condition_list
+%type <condition_list>      on_condition
 %type <rel_attr_list>       select_attr
 %type <relation_list>       rel_list
+%type <join_list>           join_list
 %type <rel_attr_list>       attr_list
 %type <expression>          expression
 %type <expression_list>     expression_list
@@ -444,6 +450,7 @@ select_stmt:        /*  select 语句的语法解析树*/
         $$->selection.relations.swap(*$5);
         delete $5;
       }
+      $$->selection.type = SelectSqlNode::select_type::FILTER;
       $$->selection.relations.push_back($4);
       std::reverse($$->selection.relations.begin(), $$->selection.relations.end());
 
@@ -453,6 +460,32 @@ select_stmt:        /*  select 语句的语法解析树*/
       }
       free($4);
     }
+    | SELECT select_attr FROM ID join_list where
+    {
+        $$ = new ParsedSqlNode(SCF_SELECT);
+        if ($2 != nullptr) {
+            $$->selection.attributes.swap(*$2);
+            delete $2;
+        }
+        if ($5 != nullptr) {
+            $$->selection.relations.swap(*($5->first));
+            delete $5->first;
+        }
+
+    $$->selection.relations.push_back($4);
+    std::reverse($$->selection.relations.begin(), $$->selection.relations.end());
+      $$->selection.type = SelectSqlNode::select_type::INNER_JOIN;
+    if ($5->second != nullptr) {
+        $$->selection.conditions.swap(*($5->second));
+        delete $5->second;
+    }
+    if ($6 != nullptr) {
+        $$->selection.conditions.insert($$->selection.conditions.end(),$6->begin(),$6->end());
+        delete $6;
+    }
+    free($5);
+    free($4);
+    }
     ;
 calc_stmt:
     CALC expression_list
@@ -461,6 +494,68 @@ calc_stmt:
       std::reverse($2->begin(), $2->end());
       $$->calc.expressions.swap(*$2);
       delete $2;
+    }
+    ;
+
+on_condition_list:
+    condition
+    {
+        $$ = new vector<ConditionSqlNode>;
+        $$->push_back(*$1);
+        delete $1;
+    }
+    | condition AND on_condition_list
+    {
+        $$ = $3;
+        $$->push_back(*$1);
+        delete $1;
+    }
+    ;
+
+on_condition:
+    /* empty */
+    {
+        $$ = nullptr;
+    }
+    | ON on_condition_list {
+        $$ = $2;
+    }
+    ;
+
+
+join_list:
+    INNER JOIN ID on_condition
+    {
+        $$ = new std::pair<std::vector<std::string>*,std::vector<ConditionSqlNode> *>;
+        $$->first = new std::vector<std::string>;
+        $$->first->push_back($3);
+        if($4 != nullptr)
+        {
+            $$->second = new std::vector<ConditionSqlNode>;
+            $$->second->insert($$->second->end(),$4->begin(),$4->end());
+            delete $4;
+        }
+        else
+        {
+            $$->second = nullptr;
+        }
+        free($3);
+    }
+    | INNER JOIN ID on_condition join_list {
+        $$ = $5;
+        $$->first->push_back($3);
+        if($4 != nullptr)
+        {
+            if($$->second == nullptr)
+            {
+                $$->second = new std::vector<ConditionSqlNode>;
+                $$->second->insert($$->second->end(),$4->begin(),$4->end());
+            }
+            else
+                $$->second->insert($$->second->end(),$4->begin(),$4->end());
+            delete $4;
+        }
+        free($3);
     }
     ;
 
