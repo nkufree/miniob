@@ -351,7 +351,9 @@ attr_def:
 field_allow_null:
     /* empty */
     { $$ = true; }
+    | NULL_T { $$ = true; }
      | NOT NULL_T { $$ = false; }
+     ;
 
 number:
     NUMBER {$$ = $1;}
