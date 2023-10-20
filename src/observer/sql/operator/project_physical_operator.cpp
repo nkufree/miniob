@@ -47,6 +47,7 @@ RC ProjectPhysicalOperator::open(Trx *trx)
         case SYS_SUM: {
           specToValue_[spec] = Value(1);
         } break;
+        // TODO
         default : {
           specToValue_[spec] = cell;
         }
@@ -71,6 +72,7 @@ RC ProjectPhysicalOperator::open(Trx *trx)
         case SYS_COUNT:{
           specToValue_[spec].set_int(specToValue_[spec].get_int() + 1);
         } break;
+        // TODO
         case SYS_AVG:
         case SYS_SUM: {
           if(cell.attr_type() == INTS)
