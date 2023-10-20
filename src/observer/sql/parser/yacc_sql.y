@@ -102,6 +102,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
         JOIN
         NOT
         NULL_T
+        IS
 
 /** union 中定义各种数据类型，真实生成的代码也是union类型，所以不能有非POD类型的数据 **/
 %union {
@@ -374,6 +375,7 @@ insert_stmt:        /*insert   语句的语法解析树*/
       $$ = new ParsedSqlNode(SCF_INSERT);
       $$->insertion.relation_name = $3;
       $$->insertion.values.swap(*$5);
+      std::reverse($$->insertion.values.begin(), $$->insertion.values.end());
       free($3);
     }
     ;
@@ -740,7 +742,47 @@ condition_list:
     }
     ;
 condition:
-    rel_attr comp_op value
+    rel_attr IS NULL_T
+    {
+      $$ = new ConditionSqlNode;
+      $$->left_is_attr = 1;
+      $$->left_attr = *$1;
+      $$->comp = IS_NULL;
+      $$->right_is_attr = 0;
+
+      delete $1;
+    }
+    | rel_attr IS NOT NULL_T
+    {
+      $$ = new ConditionSqlNode;
+      $$->left_is_attr = 1;
+      $$->left_attr = *$1;
+      $$->comp = IS_NOT_NULL;
+      $$->right_is_attr = 0;
+
+      delete $1;
+    }
+    | value IS NULL_T
+    {
+      $$ = new ConditionSqlNode;
+      $$->left_is_attr = 0;
+      $$->left_value = *$1;
+      $$->comp = IS_NULL;
+      $$->right_is_attr = 0;
+
+      delete $1;
+    }
+    | value IS NOT NULL_T
+    {
+      $$ = new ConditionSqlNode;
+      $$->left_is_attr = 0;
+      $$->left_value = *$1;
+      $$->comp = IS_NOT_NULL;
+      $$->right_is_attr = 0;
+
+      delete $1;
+    }
+    | rel_attr comp_op value
     {
       $$ = new ConditionSqlNode;
       $$->left_is_attr = 1;

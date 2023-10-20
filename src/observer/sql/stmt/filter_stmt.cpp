@@ -81,12 +81,12 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
     const ConditionSqlNode &condition, FilterUnit *&filter_unit)
 {
   RC rc = RC::SUCCESS;
-
   CompOp comp = condition.comp;
   if (comp < EQUAL_TO || comp >= NO_OP) {
     LOG_WARN("invalid compare operator : %d", comp);
     return RC::INVALID_ARGUMENT;
   }
+  
 
   filter_unit = new FilterUnit;
 
@@ -105,6 +105,14 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
     FilterObj filter_obj;
     filter_obj.init_value(condition.left_value);
     filter_unit->set_left(filter_obj);
+  }
+
+if(comp > COMP_WITH_NULL)
+  {
+    FilterObj filter_obj;
+    filter_obj.init_value(Value(UNDEFINED,nullptr,1));
+    filter_unit->set_comp(comp);
+    return rc;
   }
 
   if (condition.right_is_attr) {

@@ -137,7 +137,16 @@ bool DefaultConditionFilter::filter(const Record &rec) const
   } else {
     right_value.set_value(right_.value);
   }
+    LOG_WARN("goto compare left.is_null=%d",(int)left_value.is_null());
 
+    if(comp_op_ == IS_NULL) 
+    {
+        return left_value.is_null();
+    } 
+    else if(comp_op_ == IS_NOT_NULL)
+    {
+        return left_value.is_null() ? false : true;
+    }
   int cmp_result = left_value.compare(right_value);
 
   switch (comp_op_) {

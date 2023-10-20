@@ -88,12 +88,24 @@ ComparisonExpr::~ComparisonExpr()
 
 RC ComparisonExpr::compare_value(const Value &left, const Value &right, bool &result) const
 {
+    // LOG_WARN("goto compare left.is_null=%d",(int)left.is_null());
+    if(comp_ == IS_NULL) 
+    {
+        result = left.is_null();
+        return RC::SUCCESS;
+    } 
+    else if(comp_ == IS_NOT_NULL)
+    {
+        result = left.is_null() ? false : true;
+        return RC::SUCCESS;
+    }
     if(left.is_null() || right.is_null())
     {
         result = false;
         return RC::SUCCESS;
     }
   RC rc = RC::SUCCESS;
+  
   int cmp_result = left.compare(right);
   result = false;
   switch (comp_) {
@@ -155,7 +167,8 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value) const
     LOG_WARN("failed to get value of left expression. rc=%s", strrc(rc));
     return rc;
   }
-  rc = right_->get_value(tuple, right_value);
+  if(comp_ < COMP_WITH_NULL)
+    rc = right_->get_value(tuple, right_value);
   if (rc != RC::SUCCESS) {
     LOG_WARN("failed to get value of right expression. rc=%s", strrc(rc));
     return rc;

@@ -67,6 +67,11 @@ Value::Value(const char *s, int len /*= 0*/)
 
 void Value::set_data(char *data, int length)
 {
+    if(data == nullptr)
+    {
+        length_ = length;
+        return;
+    }
     is_null_ = (bool)data[length-1];
   switch (attr_type_) {
     case CHARS: {
