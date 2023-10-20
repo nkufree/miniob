@@ -59,6 +59,8 @@ extern double atof();
 %option case-insensitive
 %option bison-locations
 
+IS               [Ii][Ss]
+NOT              [Nn][Oo][Tt]
 WHITE_SAPCE      [\ \t\b\f]
 DIGIT            [0-9]+
 
@@ -116,6 +118,13 @@ LOAD                                    RETURN_TOKEN(LOAD);
 DATA                                    RETURN_TOKEN(DATA);
 INFILE                                  RETURN_TOKEN(INFILE);
 EXPLAIN                                 RETURN_TOKEN(EXPLAIN);
+MAX                                     RETURN_TOKEN(MAX);
+MIN                                     RETURN_TOKEN(MIN);
+COUNT                                   RETURN_TOKEN(COUNT);
+SUM                                     RETURN_TOKEN(SUM);
+AVG                                     RETURN_TOKEN(AVG);
+{IS}                                    RETURN_TOKEN(IS);
+{IS}[\ ]*{NOT}                                RETURN_TOKEN(ISNOT);
 {ID}                                    yylval->string=strdup(yytext); RETURN_TOKEN(ID);
 "("                                     RETURN_TOKEN(LBRACE);
 ")"                                     RETURN_TOKEN(RBRACE);

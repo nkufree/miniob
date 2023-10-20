@@ -34,10 +34,20 @@ class Expression;
  * Rel -> Relation
  * Attr -> Attribute
  */
+enum AggreType
+{
+  SYS_COUNT,
+  SYS_SUM,
+  SYS_AVG,
+  SYS_MAX,
+  SYS_MIN
+};
+
 struct RelAttrSqlNode
 {
   std::string relation_name;   ///< relation name (may be NULL) 表名
   std::string attribute_name;  ///< attribute name              属性名
+  AggreType aggretype;  ///< aggregate name              聚合函数名
 };
 
 /**
@@ -54,6 +64,8 @@ enum CompOp
   GREAT_THAN,   ///< ">"
   NO_OP
 };
+
+
 
 /**
  * @brief 表示一个条件比较

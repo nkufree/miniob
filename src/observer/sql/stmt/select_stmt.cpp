@@ -1,5 +1,5 @@
 /* Copyright (c) 2021 OceanBase and/or its affiliates. All rights reserved.
-miniob is licensed under Mulan PSL v2.
+SYS_MINiob is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
 You may obtain a copy of Mulan PSL v2 at:
          http://license.coscl.org.cn/MulanPSL2
@@ -65,38 +65,99 @@ RC SelectStmt::create(Db *db, const SelectSqlNode &select_sql, Stmt *&stmt)
 
   // collect query fields in `select` statement
   std::vector<Field> query_fields;
-  for (int i = static_cast<int>(select_sql.attributes.size()) - 1; i >= 0; i--) {
+  std::vector<std::string> aggretype = {};
+  for (int i = static_cast<int>(select_sql.attributes.size()) - 1; i >= 0; i--) 
+  {
     const RelAttrSqlNode &relation_attr = select_sql.attributes[i];
 
-    if (common::is_blank(relation_attr.relation_name.c_str()) &&
-        0 == strcmp(relation_attr.attribute_name.c_str(), "*")) {
-      for (Table *table : tables) {
-        wildcard_fields(table, query_fields);
-      }
+    // if (common::is_blank(relation_attr.relation_name.c_str()) &&
+    //   0 == strcmp(relation_attr.attribute_name.c_str(), "*")) {
+    // for (Table *table : tables) {
+    //   wildcard_fields(table, query_fields);
+    // }
 
-    } else if (!common::is_blank(relation_attr.relation_name.c_str())) {
+    if (common::is_blank(relation_attr.relation_name.c_str()))
+    {
+      if(0 == strcmp(relation_attr.attribute_name.c_str(), "*"))
+      {
+        for (Table *table : tables) 
+        {
+          wildcard_fields(table, query_fields);
+          aggretype.push_back(NULL);
+        }
+      }
+      else
+      {
+        if (tables.size() != 1) 
+        {
+          LOG_WARN("invalid. I do not know the attr's table. attr=%s", relation_attr.attribute_name.c_str());
+          return RC::SCHEMA_FIELD_MISSING;
+        }
+        Table *table = tables[0];
+        const FieldMeta *field_meta = table->table_meta().field(relation_attr.attribute_name.c_str());
+        if (nullptr == field_meta) 
+        {
+          LOG_WARN("no such field. field=%s.%s.%s", db->name(), table->name(), relation_attr.attribute_name.c_str());
+          return RC::SCHEMA_FIELD_MISSING;
+        }
+        query_fields.push_back(Field(table, field_meta));
+        
+        switch (relation_attr.aggretype)
+        {
+          case SYS_MAX:
+            aggretype.push_back("SYS_MAX");
+            break;
+          case SYS_MIN:
+            aggretype.push_back("SYS_MIN");
+            break;
+          case SYS_COUNT:
+            aggretype.push_back("SYS_COUNT");
+            break; 
+          case SYS_AVG:
+            aggretype.push_back("SYS_AVG");
+            break;
+          case SYS_SUM:
+            aggretype.push_back("SYS_SUM");
+            break;
+        };
+      }
+    }
+    else if(!common::is_blank(relation_attr.relation_name.c_str()))
+    {
       const char *table_name = relation_attr.relation_name.c_str();
       const char *field_name = relation_attr.attribute_name.c_str();
-
-      if (0 == strcmp(table_name, "*")) {
-        if (0 != strcmp(field_name, "*")) {
+      if (0 == strcmp(table_name, "*")) 
+      {
+        if (0 != strcmp(field_name, "*")) 
+        {
           LOG_WARN("invalid field name while table is *. attr=%s", field_name);
           return RC::SCHEMA_FIELD_MISSING;
         }
-        for (Table *table : tables) {
+        for (Table *table : tables) 
+        {
           wildcard_fields(table, query_fields);
         }
-      } else {
+      } 
+      else 
+      {
         auto iter = table_map.find(table_name);
-        if (iter == table_map.end()) {
+        if (iter == table_map.end()) 
+        {
           LOG_WARN("no such table in from list: %s", table_name);
           return RC::SCHEMA_FIELD_MISSING;
         }
 
         Table *table = iter->second;
-        if (0 == strcmp(field_name, "*")) {
+        if (0 == strcmp(field_name, "*")) 
+        {
           wildcard_fields(table, query_fields);
-        } else {
+          if(relation_attr.aggretype == SYS_COUNT)
+          {
+            aggretype.push_back("SYS_COUNT");
+          }
+        } 
+        else 
+        {
           const FieldMeta *field_meta = table->table_meta().field(field_name);
           if (nullptr == field_meta) {
             LOG_WARN("no such field. field=%s.%s.%s", db->name(), table->name(), field_name);
@@ -104,10 +165,31 @@ RC SelectStmt::create(Db *db, const SelectSqlNode &select_sql, Stmt *&stmt)
           }
 
           query_fields.push_back(Field(table, field_meta));
+          switch (relation_attr.aggretype)
+          {
+            case SYS_MAX:
+              aggretype.push_back("SYS_MAX");
+              break;
+            case SYS_MIN:
+              aggretype.push_back("SYS_MIN");
+              break;
+            case SYS_COUNT:
+              aggretype.push_back("SYS_COUNT");
+              break; 
+            case SYS_AVG:
+              aggretype.push_back("SYS_AVG");
+              break;
+            case SYS_SUM:
+              aggretype.push_back("SYS_SUM");
+              break;
+          };
         }
       }
-    } else {
-      if (tables.size() != 1) {
+    }
+    else
+    {
+      if (tables.size() != 1) 
+      {
         LOG_WARN("invalid. I do not know the attr's table. attr=%s", relation_attr.attribute_name.c_str());
         return RC::SCHEMA_FIELD_MISSING;
       }
@@ -120,7 +202,68 @@ RC SelectStmt::create(Db *db, const SelectSqlNode &select_sql, Stmt *&stmt)
       }
 
       query_fields.push_back(Field(table, field_meta));
+      switch (relation_attr.aggretype)
+      {
+        case SYS_MAX:
+          aggretype.push_back("SYS_MAX");
+          break;
+        case SYS_MIN:
+          aggretype.push_back("SYS_MIN");
+          break;
+        case SYS_COUNT:
+          aggretype.push_back("SYS_COUNT");
+          break; 
+        case SYS_AVG:
+          aggretype.push_back("SYS_AVG");
+          break;
+        case SYS_SUM:
+          aggretype.push_back("SYS_SUM");
+          break;
+      };
     }
+    // else if (!common::is_blank(relation_attr.relation_name.c_str())) {
+    //   const char *table_name = relation_attr.relation_name.c_str();
+    //   const char *field_name = relation_attr.attribute_name.c_str();
+    //   if (0 == strcmp(table_name, "*")) {
+    //     if (0 != strcmp(field_name, "*")) {
+    //       LOG_WARN("invalid field name while table is *. attr=%s", field_name);
+    //       return RC::SCHEMA_FIELD_MISSING;
+    //     }
+    //     for (Table *table : tables) {
+    //       wildcard_fields(table, query_fields);
+    //     }
+    //   } else {
+    //     auto iter = table_map.find(table_name);
+    //     if (iter == table_map.end()) {
+    //       LOG_WARN("no such table in from list: %s", table_name);
+    //       return RC::SCHEMA_FIELD_MISSING;
+    //     }
+    //     Table *table = iter->second;
+    //     if (0 == strcmp(field_name, "*")) {
+    //       wildcard_fields(table, query_fields);
+    //     } else {
+    //       const FieldMeta *field_meta = table->table_meta().field(field_name);
+    //       if (nullptr == field_meta) {
+    //         LOG_WARN("no such field. field=%s.%s.%s", db->name(), table->name(), field_name);
+    //         return RC::SCHEMA_FIELD_MISSING;
+    //       }
+    //       query_fields.push_back(Field(table, field_meta));
+    //     }
+    //   }
+    // } 
+    // else {
+    //   if (tables.size() != 1) {
+    //     LOG_WARN("invalid. I do not know the attr's table. attr=%s", relation_attr.attribute_name.c_str());
+    //     return RC::SCHEMA_FIELD_MISSING;
+    //   }
+    //   Table *table = tables[0];
+    //   const FieldMeta *field_meta = table->table_meta().field(relation_attr.attribute_name.c_str());
+    //   if (nullptr == field_meta) {
+    //     LOG_WARN("no such field. field=%s.%s.%s", db->name(), table->name(), relation_attr.attribute_name.c_str());
+    //     return RC::SCHEMA_FIELD_MISSING;
+    //   }
+    //   query_fields.push_back(Field(table, field_meta));
+    // }
   }
 
   LOG_INFO("got %d tables in from stmt and %d fields in query stmt", tables.size(), query_fields.size());
@@ -149,6 +292,7 @@ RC SelectStmt::create(Db *db, const SelectSqlNode &select_sql, Stmt *&stmt)
   select_stmt->tables_.swap(tables);
   select_stmt->query_fields_.swap(query_fields);
   select_stmt->filter_stmt_ = filter_stmt;
+  select_stmt->aggretype_.swap(aggretype);
   stmt = select_stmt;
   return RC::SUCCESS;
 }

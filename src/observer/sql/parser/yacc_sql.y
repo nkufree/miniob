@@ -98,6 +98,13 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
         LE
         GE
         NE
+        MAX
+        MIN
+        COUNT
+        AVG
+        SUM
+        IS
+        ISNOT
 
 /** union 中定义各种数据类型，真实生成的代码也是union类型，所以不能有非POD类型的数据 **/
 %union {
@@ -117,6 +124,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
   char *                            string;
   int                               number;
   float                             floats;
+  enum AggreType                    aggretype;
 }
 
 %token <number> NUMBER
@@ -128,6 +136,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
 
 /** type 定义了各种解析后的结果输出的是什么类型。类型对应了 union 中的定义的成员变量名称 **/
 %type <number>              type
+%type <aggretype>           aggretype
 %type <condition>           condition
 %type <value>               value
 %type <number>              number
@@ -539,6 +548,12 @@ rel_attr:
       free($1);
       free($3);
     }
+    | aggretype LBRACE rel_attr RBRACE {
+      $$ = new RelAttrSqlNode;
+      $$->attribute_name = $3->attribute_name;
+      $$->relation_name  = $3->relation_name;
+      $$->aggretype = $1;
+    }
     ;
 
 attr_list:
@@ -659,6 +674,14 @@ comp_op:
     | NE { $$ = NOT_EQUAL; }
     ;
 
+aggretype:
+	  COUNT { $$ = SYS_COUNT; }
+	| MIN {	$$ = SYS_MIN;	}
+	| MAX {	$$ = SYS_MAX;	}
+	| AVG {	$$ = SYS_AVG;	}
+	| SUM {	$$ = SYS_SUM;	}
+	;
+
 load_data_stmt:
     LOAD DATA INFILE SSS INTO TABLE ID 
     {
@@ -690,6 +713,8 @@ set_variable_stmt:
       delete $4;
     }
     ;
+
+
 
 opt_semicolon: /*empty*/
     | SEMICOLON
