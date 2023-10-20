@@ -123,6 +123,8 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
   float                             floats;
   std::pair<std::vector<std::string>*,std::vector<ConditionSqlNode> *>* join_list;
     bool                            type_allow_null;
+  std::vector<std::vector<Value>>*  insert_values_list;
+  std::vector<Value>*               insert_each_value;
 }
 
 %token <number> NUMBER
@@ -176,6 +178,8 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
 // commands should be a list but I use a single command instead
 %type <sql_node>            commands
 %type <type_allow_null>     field_allow_null
+%type <insert_values_list>  insert_values_list
+%type <insert_each_value>   insert_each_value
 
 %left '+' '-'
 %left '*' '/'
@@ -365,17 +369,40 @@ type:
     | DATE_T   { $$=DATES; }
     ;
 insert_stmt:        /*insert   语句的语法解析树*/
-    INSERT INTO ID VALUES LBRACE value value_list RBRACE 
+    INSERT INTO ID VALUES insert_values_list
     {
       $$ = new ParsedSqlNode(SCF_INSERT);
       $$->insertion.relation_name = $3;
-      if ($7 != nullptr) {
-        $$->insertion.values.swap(*$7);
-      }
-      $$->insertion.values.emplace_back(*$6);
-      std::reverse($$->insertion.values.begin(), $$->insertion.values.end());
-      delete $6;
+      $$->insertion.values.swap(*$5);
       free($3);
+    }
+    ;
+
+insert_values_list :
+    insert_each_value 
+    {
+        $$ = new std::vector<std::vector<Value>>;
+        $$->push_back(*$1);
+        delete $1;
+    }
+    | insert_each_value COMMA insert_values_list
+    {
+        $$ = $3;
+        $$->push_back(*$1);
+        delete $1;
+    }
+    ;
+
+insert_each_value :
+    LBRACE value value_list RBRACE
+    {
+        $$ = new std::vector<Value>;
+        if($3 != nullptr) {
+            $$->swap(*$3);
+        }
+        $$->emplace_back(*$2);
+        std::reverse($$->begin(), $$->end());
+        delete $2;
     }
     ;
 

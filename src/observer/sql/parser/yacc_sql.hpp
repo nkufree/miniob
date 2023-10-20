@@ -136,8 +136,10 @@ union YYSTYPE
   float                             floats;
   std::pair<std::vector<std::string>*,std::vector<ConditionSqlNode> *>* join_list;
     bool                            type_allow_null;
+  std::vector<std::vector<Value>>*  insert_values_list;
+  std::vector<Value>*               insert_each_value;
 
-#line 141 "yacc_sql.hpp"
+#line 143 "yacc_sql.hpp"
 
 };
 typedef union YYSTYPE YYSTYPE;
