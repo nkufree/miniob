@@ -356,13 +356,15 @@ RC SysFuncExpr::get_value(Value &value)
         {
             case SYS_MAX:
             case SYS_MIN:
+            case SYS_AVG:
+            case SYS_SUM:
                 aggre_value_.set_null(true);
                 break;
             case SYS_COUNT:
-            case SYS_COUNT_NUM:
-            case SYS_AVG:
-            case SYS_SUM:
                 aggre_value_.set_int(0);
+                break;
+            case SYS_COUNT_NUM:
+                aggre_value_.set_int(num_)
                 break;
             default:
                 break;
