@@ -406,6 +406,7 @@ void Value::max_value(Value* v)
     switch(attr_type_)
     {
         case INTS:
+        case DATES:
             num_value_.int_value_ = compare(*v) > 0 ? num_value_.int_value_ : v->get_int();
             break;
         case FLOATS:
@@ -427,6 +428,7 @@ void Value::min_value(Value* v)
     switch(attr_type_)
     {
         case INTS:
+        case DATES:
             num_value_.int_value_ = compare(*v) < 0 ? num_value_.int_value_ : v->get_int();
             break;
         case FLOATS:
