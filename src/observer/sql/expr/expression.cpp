@@ -435,6 +435,8 @@ RC SysFuncExpr::add_tuple(Tuple *tuple)
             num_++;
             break;
         case SYS_AVG:
+            if(!v.is_null())
+                num_++;
         case SYS_SUM:
             aggre_value_.add_value(&v);
 

@@ -413,6 +413,7 @@ void Value::max_value(Value* v)
             break;
         case CHARS:
             str_value_ = compare(*v) > 0 ? str_value_ : v->get_string();
+            break;
         default:
             LOG_WARN("error add data type. type=%d", attr_type_);
     }
@@ -429,10 +430,11 @@ void Value::min_value(Value* v)
             num_value_.int_value_ = compare(*v) < 0 ? num_value_.int_value_ : v->get_int();
             break;
         case FLOATS:
-            num_value_.float_value_ = !compare(*v) < 0 ? num_value_.int_value_ : v->get_float();
+            num_value_.float_value_ = compare(*v) < 0 ? num_value_.int_value_ : v->get_float();
             break;
         case CHARS:
-            str_value_ = !compare(*v) < 0 ? str_value_ : v->get_string();
+            str_value_ = compare(*v) < 0 ? str_value_ : v->get_string();
+            break;
         default:
             LOG_WARN("error add data type. type=%d", attr_type_);
     }
