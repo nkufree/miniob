@@ -59,6 +59,14 @@ public:
   {
     append_cell(TupleCellSpec(table, field));
   }
+  void append_cell(const char *table, const char *field, SysFunc sf)
+  {
+    append_cell(TupleCellSpec(table, field, sf));
+  }
+  void append_cell(const char *field, SysFunc sf)
+  {
+    append_cell(TupleCellSpec(field, sf));
+  }
   void append_cell(const char *alias)
   {
     append_cell(TupleCellSpec(alias));

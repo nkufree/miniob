@@ -43,6 +43,7 @@ enum class ExprType
   COMPARISON,   ///< 需要做比较的表达式
   CONJUNCTION,  ///< 多个表达式使用同一种关系(AND或OR)来联结
   ARITHMETIC,   ///< 算术运算
+  SYS_FUNC,     ///< 系统函数
 };
 
 /**
@@ -299,4 +300,43 @@ private:
   Type arithmetic_type_;
   std::unique_ptr<Expression> left_;
   std::unique_ptr<Expression> right_;
+};
+
+
+// 系统调用表达式，对于聚合函数，因添加tuple到不能添加为止，对于一元函数，根据函数参数给出结果
+class SysFuncExpr : public Expression 
+{
+public:
+  SysFuncExpr() = default;
+  SysFuncExpr(const SysFunc sf, const Table *table, const FieldMeta *field) : sys_func_(sf), field_(table, field)
+  {}
+  SysFuncExpr(const SysFunc sf, const Field &field) : sys_func_(sf), field_(field)
+  {}
+
+  virtual ~SysFuncExpr() = default;
+
+  ExprType type() const override { return ExprType::SYS_FUNC; }
+  AttrType value_type() const override { return field_.attr_type(); }
+
+  Field &field() { return field_; }
+
+  const Field &field() const { return field_; }
+
+  SysFunc sys_func() {return sys_func_;}
+  const SysFunc sys_func() const {return sys_func_;}
+
+  const char *table_name() const { return field_.table_name(); }
+
+  const char *field_name() const { return field_.field_name(); }
+
+  RC get_value(const Tuple &tuple, Value &value) const override {return RC::INTERNAL;}
+  RC get_value(Value &value);
+  RC init_aggre(Value* v);
+  RC add_tuple(Tuple *tuple);
+private:
+  Field field_;
+  SysFunc sys_func_;
+  Value aggre_value_;
+  int num_ = 0;
+  bool is_init_ = false;
 };

@@ -16,3 +16,11 @@ See the Mulan PSL v2 for more details. */
 
 ProjectLogicalOperator::ProjectLogicalOperator(const std::vector<Field> &fields) : fields_(fields)
 {}
+
+ProjectLogicalOperator::ProjectLogicalOperator(const std::vector<std::pair<SysFunc, Field>> &fields)
+{
+    for(auto f : fields)
+    {
+        this->expressions_.push_back(std::unique_ptr<Expression>(new SysFuncExpr(f.first, f.second)));
+    }
+}

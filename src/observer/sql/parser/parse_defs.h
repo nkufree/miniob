@@ -58,9 +58,15 @@ enum CompOp
   NO_OP
 };
 
-enum CompNull
+enum SysFunc
 {
-    
+    SYS_MAX,
+    SYS_MIN,
+    SYS_COUNT,
+    SYS_COUNT_NUM,
+    SYS_AVG,
+    SYS_SUM,
+    NO_SYS_FUNC,
 };
 
 /**
@@ -95,9 +101,14 @@ struct ConditionSqlNode
  * 甚至可以包含复杂的表达式。
  */
 
+struct SysFuncSqlNode
+{
+    std::pair<SysFunc, RelAttrSqlNode> attributes;
+};
+
 struct SelectSqlNode
 {
-  std::vector<RelAttrSqlNode>     attributes;    ///< attributes in select clause
+  std::vector<SysFuncSqlNode>     attributes;    ///< attributes in select clause
   std::vector<std::string>        relations;     ///< 查询的表
   std::vector<ConditionSqlNode>   conditions;    ///< 查询条件，使用AND串联起来多个条件
   enum select_type{FILTER, INNER_JOIN} type;

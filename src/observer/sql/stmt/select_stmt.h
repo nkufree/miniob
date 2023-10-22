@@ -49,7 +49,7 @@ public:
   {
     return tables_;
   }
-  const std::vector<Field> &query_fields() const
+  const std::vector<std::pair<SysFunc, Field>> &query_fields() const
   {
     return query_fields_;
   }
@@ -62,7 +62,7 @@ public:
         return select_type_;
     }
 private:
-  std::vector<Field> query_fields_;
+  std::vector<std::pair<SysFunc, Field>> query_fields_;
   std::vector<Table *> tables_;
   FilterStmt *filter_stmt_ = nullptr;
   SelectSqlNode::select_type select_type_;

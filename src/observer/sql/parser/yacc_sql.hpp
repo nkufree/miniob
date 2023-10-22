@@ -103,12 +103,17 @@ extern int yydebug;
     NOT = 304,                     /* NOT  */
     NULL_T = 305,                  /* NULL_T  */
     IS = 306,                      /* IS  */
-    NUMBER = 307,                  /* NUMBER  */
-    FLOAT = 308,                   /* FLOAT  */
-    ID = 309,                      /* ID  */
-    DATE_STR = 310,                /* DATE_STR  */
-    SSS = 311,                     /* SSS  */
-    UMINUS = 312                   /* UMINUS  */
+    COUNT_N = 307,                 /* COUNT_N  */
+    MAX_N = 308,                   /* MAX_N  */
+    MIN_N = 309,                   /* MIN_N  */
+    AVG_N = 310,                   /* AVG_N  */
+    SUM_N = 311,                   /* SUM_N  */
+    NUMBER = 312,                  /* NUMBER  */
+    FLOAT = 313,                   /* FLOAT  */
+    ID = 314,                      /* ID  */
+    DATE_STR = 315,                /* DATE_STR  */
+    SSS = 316,                     /* SSS  */
+    UMINUS = 317                   /* UMINUS  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -117,7 +122,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 108 "yacc_sql.y"
+#line 113 "yacc_sql.y"
 
   ParsedSqlNode *                   sql_node;
   ConditionSqlNode *                condition;
@@ -139,8 +144,11 @@ union YYSTYPE
     bool                            type_allow_null;
   std::vector<std::vector<Value>>*  insert_values_list;
   std::vector<Value>*               insert_each_value;
+  SysFuncSqlNode*                   call_sys_func_attr;
+  std::vector<SysFuncSqlNode>*      sys_func_attr_list;
+  SysFunc                           sys_func;
 
-#line 144 "yacc_sql.hpp"
+#line 152 "yacc_sql.hpp"
 
 };
 typedef union YYSTYPE YYSTYPE;

@@ -346,3 +346,98 @@ RC ArithmeticExpr::try_get_value(Value &value) const
 
   return calc_value(left_value, right_value, value);
 }
+
+RC SysFuncExpr::get_value(Value &value)
+{
+    
+    if(!is_init_)
+    {
+        switch(sys_func_)
+        {
+            case SYS_MAX:
+            case SYS_MIN:
+                aggre_value_.set_null(true);
+                break;
+            case SYS_COUNT:
+            case SYS_COUNT_NUM:
+            case SYS_AVG:
+            case SYS_SUM:
+                aggre_value_.set_int(0);
+                break;
+            default:
+                break;
+        }
+    }
+    if(sys_func_ == SYS_AVG && is_init_)
+    {
+        if(aggre_value_.attr_type() == INTS)
+        {
+            aggre_value_.set_float(aggre_value_.get_int() * 1.0 / num_);
+        }
+        else if(aggre_value_.attr_type() == FLOATS)
+        {
+            aggre_value_.set_float(aggre_value_.get_float() / num_);
+        }
+    }
+    if((sys_func_ == SYS_COUNT || sys_func_ == SYS_COUNT_NUM) && is_init_)
+    {
+        aggre_value_.set_int(num_);
+    }
+    value = const_cast<Value&>(aggre_value_);
+    return RC::SUCCESS;
+}
+
+RC SysFuncExpr::init_aggre(Value* v)
+{
+    switch(v->attr_type())
+    {
+        case INTS:
+            aggre_value_.set_int(v->get_int());
+            break;
+        case FLOATS:
+            aggre_value_.set_float(v->get_float());
+            break;
+        case DATES:
+            aggre_value_.set_date(v->get_int());
+            break;
+        case CHARS:
+            aggre_value_.set_string(v->get_string().c_str());
+            break;
+        defalut:
+            LOG_ERROR("init aggregate function false");
+            return RC::INTERNAL;
+    }
+    num_ ++;
+    is_init_ = true;
+    return RC::SUCCESS;
+
+}
+
+RC SysFuncExpr::add_tuple(Tuple *tuple)
+{
+    Value v;
+    tuple->find_cell(TupleCellSpec(table_name(), field_name()), v);
+    if(!is_init_ && !v.is_null())
+        return init_aggre(&v);
+    switch(sys_func_)
+    {
+        case SYS_MAX:
+            aggre_value_.max_value(&v);
+            break;
+        case SYS_MIN:
+            aggre_value_.min_value(&v);
+            break;
+        case SYS_COUNT:
+            if(!v.is_null())
+                num_++;
+            break;
+        case SYS_COUNT_NUM:
+            num_++;
+            break;
+        case SYS_AVG:
+        case SYS_SUM:
+            aggre_value_.add_value(&v);
+
+    }
+    return RC::SUCCESS;
+}

@@ -378,3 +378,62 @@ bool Value::get_boolean() const
   }
   return false;
 }
+
+
+void Value::add_value(Value* v)
+{
+    ASSERT(attr_type_ == v->attr_type(),"add type not match");
+    if(v->is_null())
+        return;
+    switch(attr_type_)
+    {
+        case INTS:
+            num_value_.int_value_ += v->get_int();
+            break;
+        case FLOATS:
+            num_value_.float_value_ += v->get_float();
+            break;
+        default:
+            LOG_WARN("error add data type. type=%d", attr_type_);
+    }
+}
+
+void Value::max_value(Value* v)
+{
+    ASSERT(attr_type_ == v->attr_type(),"add type not match");
+    if(v->is_null())
+        return;
+    switch(attr_type_)
+    {
+        case INTS:
+            num_value_.int_value_ = compare(*v) > 0 ? num_value_.int_value_ : v->get_int();
+            break;
+        case FLOATS:
+            num_value_.float_value_ = compare(*v) > 0 ? num_value_.int_value_ : v->get_float();
+            break;
+        case CHARS:
+            str_value_ = compare(*v) > 0 ? str_value_ : v->get_string();
+        default:
+            LOG_WARN("error add data type. type=%d", attr_type_);
+    }
+}
+
+void Value::min_value(Value* v)
+{
+    ASSERT(attr_type_ == v->attr_type(),"add type not match");
+    if(v->is_null())
+        return;
+    switch(attr_type_)
+    {
+        case INTS:
+            num_value_.int_value_ = compare(*v) < 0 ? num_value_.int_value_ : v->get_int();
+            break;
+        case FLOATS:
+            num_value_.float_value_ = !compare(*v) < 0 ? num_value_.int_value_ : v->get_float();
+            break;
+        case CHARS:
+            str_value_ = !compare(*v) < 0 ? str_value_ : v->get_string();
+        default:
+            LOG_WARN("error add data type. type=%d", attr_type_);
+    }
+}

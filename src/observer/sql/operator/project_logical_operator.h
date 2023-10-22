@@ -30,6 +30,7 @@ class ProjectLogicalOperator : public LogicalOperator
 {
 public:
   ProjectLogicalOperator(const std::vector<Field> &fields);
+  ProjectLogicalOperator(const std::vector<std::pair<SysFunc, Field>> &fields);
   virtual ~ProjectLogicalOperator() = default;
 
   LogicalOperatorType type() const override

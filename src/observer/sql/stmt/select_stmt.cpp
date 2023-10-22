@@ -27,12 +27,12 @@ SelectStmt::~SelectStmt()
   }
 }
 
-static void wildcard_fields(Table *table, std::vector<Field> &field_metas)
+static void wildcard_fields(Table *table, std::vector<std::pair<SysFunc, Field>> &field_metas)
 {
   const TableMeta &table_meta = table->table_meta();
   const int field_num = table_meta.field_num();
   for (int i = table_meta.sys_field_num(); i < field_num; i++) {
-    field_metas.push_back(Field(table, table_meta.field(i)));
+    field_metas.push_back(std::pair<SysFunc, Field>(NO_SYS_FUNC, Field(table, table_meta.field(i))));
   }
 }
 
@@ -64,20 +64,39 @@ RC SelectStmt::create(Db *db, const SelectSqlNode &select_sql, Stmt *&stmt)
   }
 
   // collect query fields in `select` statement
-  std::vector<Field> query_fields;
+  std::vector<std::pair<SysFunc, Field>> query_fields;
+  bool if_sys_func = (select_sql.attributes[0].attributes.first != NO_SYS_FUNC);
   for (int i = static_cast<int>(select_sql.attributes.size()) - 1; i >= 0; i--) {
-    const RelAttrSqlNode &relation_attr = select_sql.attributes[i];
+    const std::pair<SysFunc, RelAttrSqlNode> &relation_attr = select_sql.attributes[i].attributes;
+    if((relation_attr.first != NO_SYS_FUNC) != if_sys_func) {
+        return RC::INTERNAL;
+    }
+    if (common::is_blank(relation_attr.second.relation_name.c_str()) &&
+        0 == strcmp(relation_attr.second.attribute_name.c_str(), "*")) {
+        if(if_sys_func)
+        {
+            if(relation_attr.first == SYS_COUNT)
+            {
+                for (Table *table : tables) {
+                    query_fields.push_back(std::pair<SysFunc, Field>(SYS_COUNT_NUM,  Field(table, table->table_meta().field(0))));
+                }
+            }
+            else
+            {
+                return RC::INTERNAL;
+            }
+        }
+        else{
+            for (Table *table : tables) {
+                wildcard_fields(table, query_fields);
+            }
+        }
+      
 
-    if (common::is_blank(relation_attr.relation_name.c_str()) &&
-        0 == strcmp(relation_attr.attribute_name.c_str(), "*")) {
-      for (Table *table : tables) {
-        wildcard_fields(table, query_fields);
-      }
-
-    } else if (!common::is_blank(relation_attr.relation_name.c_str())) {
-      const char *table_name = relation_attr.relation_name.c_str();
-      const char *field_name = relation_attr.attribute_name.c_str();
-
+    } else if (!common::is_blank(relation_attr.second.relation_name.c_str())) {
+      const char *table_name = relation_attr.second.relation_name.c_str();
+      const char *field_name = relation_attr.second.attribute_name.c_str();
+        const SysFunc sys_func = relation_attr.first;
       if (0 == strcmp(table_name, "*")) {
         if (0 != strcmp(field_name, "*")) {
           LOG_WARN("invalid field name while table is *. attr=%s", field_name);
@@ -103,23 +122,23 @@ RC SelectStmt::create(Db *db, const SelectSqlNode &select_sql, Stmt *&stmt)
             return RC::SCHEMA_FIELD_MISSING;
           }
 
-          query_fields.push_back(Field(table, field_meta));
+          query_fields.push_back(std::pair<SysFunc, Field>(sys_func, Field(table, field_meta)));
         }
       }
     } else {
       if (tables.size() != 1) {
-        LOG_WARN("invalid. I do not know the attr's table. attr=%s", relation_attr.attribute_name.c_str());
+        LOG_WARN("invalid. I do not know the attr's table. attr=%s", relation_attr.second.attribute_name.c_str());
         return RC::SCHEMA_FIELD_MISSING;
       }
 
       Table *table = tables[0];
-      const FieldMeta *field_meta = table->table_meta().field(relation_attr.attribute_name.c_str());
+      const FieldMeta *field_meta = table->table_meta().field(relation_attr.second.attribute_name.c_str());
       if (nullptr == field_meta) {
-        LOG_WARN("no such field. field=%s.%s.%s", db->name(), table->name(), relation_attr.attribute_name.c_str());
+        LOG_WARN("no such field. field=%s.%s.%s", db->name(), table->name(), relation_attr.second.attribute_name.c_str());
         return RC::SCHEMA_FIELD_MISSING;
       }
 
-      query_fields.push_back(Field(table, field_meta));
+      query_fields.push_back(std::pair<SysFunc, Field>(relation_attr.first, Field(table, field_meta)));
     }
   }
 
@@ -135,10 +154,10 @@ RC SelectStmt::create(Db *db, const SelectSqlNode &select_sql, Stmt *&stmt)
   if(select_sql.conditions.size() == 0 && select_sql.type == SelectSqlNode::select_type::INNER_JOIN)
   {
     std::vector<ConditionSqlNode> select_node;
-    std::map<std::string,std::vector<Field>> tmp;
-    for(Field f : query_fields)
+    std::unordered_map<std::string,std::vector<std::pair<SysFunc, Field>>> tmp;
+    for(std::pair<SysFunc, Field> f : query_fields)
     {
-        tmp[std::string(f.field_name())].push_back(f);
+        tmp[std::string(f.second.field_name())].push_back(f);
     }
     query_fields.clear();
     for(auto p : tmp)
@@ -149,14 +168,14 @@ RC SelectStmt::create(Db *db, const SelectSqlNode &select_sql, Stmt *&stmt)
     {
         if(p.second.size() != 1)
         {
-            Field first_field = p.second.front();
+            std::pair<SysFunc, Field> first_field = p.second.front();
             p.second.erase(p.second.begin());
-            for(Field f : p.second)
+            for(std::pair<SysFunc, Field> f : p.second)
             {
                 ConditionSqlNode cnnode;
                 cnnode.comp = EQUAL_TO;
-                cnnode.left_attr = {first_field.table_name(), first_field.field_name()};
-                cnnode.right_attr = {f.table_name(), f.field_name()};
+                cnnode.left_attr = {first_field.second.table_name(), first_field.second.field_name()};
+                cnnode.right_attr = {f.second.table_name(), f.second.field_name()};
                 cnnode.left_is_attr = true;
                 cnnode.right_is_attr = true;
                 select_node.push_back(cnnode);

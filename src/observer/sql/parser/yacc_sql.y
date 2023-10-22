@@ -103,6 +103,11 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
         NOT
         NULL_T
         IS
+        COUNT_N
+        MAX_N
+        MIN_N
+        AVG_N
+        SUM_N
 
 /** union 中定义各种数据类型，真实生成的代码也是union类型，所以不能有非POD类型的数据 **/
 %union {
@@ -126,6 +131,9 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
     bool                            type_allow_null;
   std::vector<std::vector<Value>>*  insert_values_list;
   std::vector<Value>*               insert_each_value;
+  SysFuncSqlNode*                   call_sys_func_attr;
+  std::vector<SysFuncSqlNode>*      sys_func_attr_list;
+  SysFunc                           sys_func;
 }
 
 %token <number> NUMBER
@@ -149,10 +157,10 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
 %type <condition_list>      condition_list
 %type <condition_list>      on_condition_list
 %type <condition_list>      on_condition
-%type <rel_attr_list>       select_attr
-%type <relation_list>       rel_list
+%type <sys_func_attr_list>       select_attr
+%type <relation_list>            rel_list
 %type <join_list>           join_list
-%type <rel_attr_list>       attr_list
+%type <sys_func_attr_list>       attr_list
 %type <expression>          expression
 %type <expression_list>     expression_list
 %type <sql_node>            calc_stmt
@@ -181,6 +189,8 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
 %type <type_allow_null>     field_allow_null
 %type <insert_values_list>  insert_values_list
 %type <insert_each_value>   insert_each_value
+%type <call_sys_func_attr>  call_sys_func_attr
+%type <sys_func>             sys_func
 
 %left '+' '-'
 %left '*' '/'
@@ -651,21 +661,51 @@ expression:
 
 select_attr:
     '*' {
-      $$ = new std::vector<RelAttrSqlNode>;
+      $$ = new std::vector<SysFuncSqlNode>;
       RelAttrSqlNode attr;
       attr.relation_name  = "";
       attr.attribute_name = "*";
-      $$->emplace_back(attr);
+      $$->emplace_back(SysFuncSqlNode(std::pair<SysFunc, RelAttrSqlNode>(NO_SYS_FUNC,attr)));
     }
-    | rel_attr attr_list {
+    | call_sys_func_attr attr_list {
       if ($2 != nullptr) {
         $$ = $2;
       } else {
-        $$ = new std::vector<RelAttrSqlNode>;
+        $$ = new std::vector<SysFuncSqlNode>;
       }
       $$->emplace_back(*$1);
       delete $1;
     }
+    ;
+
+call_sys_func_attr:
+    sys_func LBRACE rel_attr RBRACE
+    {
+        $$ = new SysFuncSqlNode;
+        $$->attributes = std::pair<SysFunc, RelAttrSqlNode>($1, *$3);
+        delete $3;
+    }
+    | sys_func LBRACE '*' RBRACE
+    {
+        $$ = new SysFuncSqlNode;
+        RelAttrSqlNode attr;
+        attr.relation_name  = "";
+        attr.attribute_name = "*";
+        $$->attributes = std::pair<SysFunc, RelAttrSqlNode>($1, attr);
+    }
+    | rel_attr
+    {
+        $$ = new SysFuncSqlNode;
+        $$->attributes = std::pair<SysFunc, RelAttrSqlNode>(NO_SYS_FUNC, *$1);
+    }
+    ;
+
+sys_func:
+    MAX_N {$$ = SYS_MAX;}
+    | MIN_N {$$ = SYS_MIN;}
+    | COUNT_N {$$ = SYS_COUNT;}
+    | AVG_N {$$ = SYS_AVG;}
+    | SUM_N {$$ = SYS_SUM;}
     ;
 
 rel_attr:
@@ -688,11 +728,11 @@ attr_list:
     {
       $$ = nullptr;
     }
-    | COMMA rel_attr attr_list {
+    | COMMA call_sys_func_attr attr_list {
       if ($3 != nullptr) {
         $$ = $3;
       } else {
-        $$ = new std::vector<RelAttrSqlNode>;
+        $$ = new std::vector<SysFuncSqlNode>;
       }
 
       $$->emplace_back(*$2);

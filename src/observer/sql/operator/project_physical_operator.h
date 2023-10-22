@@ -28,10 +28,7 @@ public:
 
   virtual ~ProjectPhysicalOperator() = default;
 
-  void add_expressions(std::vector<std::unique_ptr<Expression>> &&expressions)
-  {
-    
-  }
+  void add_expression(const std::unique_ptr<Expression>& expression);
   void add_projection(const Table *table, const FieldMeta *field);
 
   PhysicalOperatorType type() const override
@@ -45,11 +42,17 @@ public:
 
   int cell_num() const
   {
-    return tuple_.cell_num();
+    if(expressions_[0]->sys_func() < NO_SYS_FUNC)
+        return tuple_.cell_num();
+    else
+        return aggre_tuple_.cell_num();
   }
 
   Tuple *current_tuple() override;
 
 private:
   ProjectTuple tuple_;
+  ValueListTuple aggre_tuple_;
+  std::vector<std::unique_ptr<SysFuncExpr>> expressions_;
+  bool is_print_ = false;
 };

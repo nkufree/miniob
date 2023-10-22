@@ -35,10 +35,31 @@ RC ProjectPhysicalOperator::open(Trx *trx)
 
 RC ProjectPhysicalOperator::next()
 {
-  if (children_.empty()) {
+  if (children_.empty() || is_print_) {
     return RC::RECORD_EOF;
   }
-
+  if(expressions_[0]->sys_func() < NO_SYS_FUNC)
+  {
+    PhysicalOperator *child = children_[0].get();
+    std::vector<Value> values;
+    while(RC::SUCCESS == child->next())
+    {
+        Tuple* tmp = child->current_tuple();
+        for(std::unique_ptr<SysFuncExpr> &exp : expressions_)
+        {
+            exp->add_tuple(tmp);
+        }
+    }
+    for(std::unique_ptr<SysFuncExpr> &exp : expressions_)
+    {
+        Value v;
+        exp->get_value(v);
+        values.push_back(v);
+    }
+    aggre_tuple_.set_cells(values);
+    is_print_ = true;
+    return RC::SUCCESS;
+  }
   return children_[0]->next();
 }
 
@@ -51,8 +72,26 @@ RC ProjectPhysicalOperator::close()
 }
 Tuple *ProjectPhysicalOperator::current_tuple()
 {
-  tuple_.set_tuple(children_[0]->current_tuple());
-  return &tuple_;
+    if(expressions_[0]->sys_func() < NO_SYS_FUNC)
+    {
+        return &aggre_tuple_;
+    }
+    else
+    {
+        tuple_.set_tuple(children_[0]->current_tuple());
+        return &tuple_;
+    }
+  
+}
+
+void ProjectPhysicalOperator::add_expression(const std::unique_ptr<Expression>& expression)
+{
+    ASSERT(expression->type() == ExprType::SYS_FUNC, "project's expression should be SYS_FUNC type");
+    SysFuncExpr* tmp = static_cast<SysFuncExpr*>(expression.get());
+    std::unique_ptr<SysFuncExpr> p(new SysFuncExpr(*tmp));
+    TupleCellSpec *spec = new TupleCellSpec(p->table_name(), p->field_name(), p->sys_func());
+  tuple_.add_cell_spec(spec);
+  expressions_.push_back(std::move(p));
 }
 
 void ProjectPhysicalOperator::add_projection(const Table *table, const FieldMeta *field_meta)

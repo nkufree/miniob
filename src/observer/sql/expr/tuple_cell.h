@@ -22,6 +22,8 @@ class TupleCellSpec
 {
 public:
   TupleCellSpec(const char *table_name, const char *field_name, const char *alias = nullptr);
+  TupleCellSpec(const char *table_name, const char *field_name, SysFunc sys_func_name, const char *alias = nullptr);
+  TupleCellSpec(const char *field_name, SysFunc sf);
   TupleCellSpec(const char *alias);
 
   const char *table_name() const
@@ -32,6 +34,14 @@ public:
   {
     return field_name_.c_str();
   }
+  const SysFunc sys_func() const
+  {
+    return sys_func_;
+  }
+  const char *sys_func_name() const
+  {
+    return sys_func_name_.c_str();
+  }
   const char *alias() const
   {
     return alias_.c_str();
@@ -40,5 +50,7 @@ public:
 private:
   std::string table_name_;
   std::string field_name_;
+  SysFunc sys_func_;
+  std::string sys_func_name_;
   std::string alias_;
 };

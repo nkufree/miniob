@@ -92,6 +92,9 @@ public:
     {
         return is_null_;
     }
+    void add_value(Value* v);
+    void max_value(Value* v);
+    void min_value(Value* v);
 public:
   /**
    * 获取对应的值
