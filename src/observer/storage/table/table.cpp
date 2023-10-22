@@ -350,18 +350,18 @@ RC Table::make_record(int value_num, const Value *values, Record &record)
     if (field->type() == CHARS && (!value.is_null())) {
       const size_t data_len = value.length();
       if (copy_len > data_len) {
-        copy_len = data_len + 2;
+        copy_len = data_len + 1;
       }
     }
     if(value.is_null())
     {
         memset(record_data + field->offset(), 0, copy_len - 1);
-        memset(record_data + field->offset()+copy_len - 1, 1, 1);
+        memset(record_data + field->offset()+field->len() - 1, 1, 1);
     }
     else
     {
         memcpy(record_data + field->offset(), value.data(), copy_len - 1);
-        memset(record_data + field->offset()+copy_len - 1, 0, 1);
+        memset(record_data + field->offset()+field->len() - 1, 0, 1);
     }
   }
 
