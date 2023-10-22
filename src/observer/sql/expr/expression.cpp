@@ -364,7 +364,7 @@ RC SysFuncExpr::get_value(Value &value)
                 aggre_value_.set_int(0);
                 break;
             case SYS_COUNT_NUM:
-                aggre_value_.set_int(num_)
+                aggre_value_.set_int(num_);
                 break;
             default:
                 break;
