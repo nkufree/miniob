@@ -530,6 +530,8 @@ RC Table::update_record(Record &record, int attr,const Value* value)
         break;
     }
     memcpy(record_data + field->offset(), value->data(), copy_len);
+    if(value->is_null())
+        memset(record_data + field->offset() + field->len() - 1, 1, 1);
     return RC::SUCCESS;
 }
 

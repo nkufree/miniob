@@ -73,6 +73,7 @@ void Value::set_data(char *data, int length)
         return;
     }
     is_null_ = (bool)data[length-1];
+    if(is_null_) return;
   switch (attr_type_) {
     case CHARS: {
       set_string(data, length);
