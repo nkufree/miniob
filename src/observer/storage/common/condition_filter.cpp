@@ -19,6 +19,7 @@ See the Mulan PSL v2 for more details. */
 #include "common/log/log.h"
 #include "storage/table/table.h"
 #include "sql/parser/value.h"
+#include <regex>
 
 using namespace common;
 
@@ -146,6 +147,26 @@ bool DefaultConditionFilter::filter(const Record &rec) const
     else if(comp_op_ == IS_NOT_NULL)
     {
         return left_value.is_null() ? false : true;
+    }
+    else if(comp_op_ == OP_LIKE || comp_op_ == OP_NOT_LIKE)
+    {
+        std::string raw_reg(right_value.get_string());
+        size_t found = raw_reg.find('_');
+        while (found != std::string::npos) {
+            raw_reg.replace(found, 1, "[^']");
+            found = raw_reg.find('_', found + 1);
+        }
+        found = raw_reg.find('%');
+        while (found != std::string::npos) {
+            raw_reg.replace(found, 1, "[^']*");
+            found = raw_reg.find('%', found + 1);
+        }
+        std::regex reg(raw_reg.c_str(), std::regex_constants::ECMAScript | std::regex_constants::icase);
+        bool res = std::regex_match(left_value.get_string(), reg);
+        if((res && comp_op_ == OP_LIKE) || (!res && comp_op_ == OP_NOT_LIKE))
+            return true;
+        else
+            return false;
     }
   int cmp_result = left_value.compare(right_value);
 

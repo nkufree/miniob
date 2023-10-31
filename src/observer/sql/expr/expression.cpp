@@ -14,6 +14,7 @@ See the Mulan PSL v2 for more details. */
 
 #include "sql/expr/expression.h"
 #include "sql/expr/tuple.h"
+#include <regex>
 
 using namespace std;
 
@@ -127,6 +128,27 @@ RC ComparisonExpr::compare_value(const Value &left, const Value &right, bool &re
     case GREAT_THAN: {
       result = (cmp_result > 0);
     } break;
+    case OP_LIKE:
+    case OP_NOT_LIKE: {
+        std::string raw_reg(right.get_string());
+        size_t found = raw_reg.find('_');
+        while (found != std::string::npos) {
+            raw_reg.replace(found, 1, "[^']");
+            found = raw_reg.find('_', found + 1);
+        }
+        found = raw_reg.find('%');
+        while (found != std::string::npos) {
+            raw_reg.replace(found, 1, "[^']*");
+            found = raw_reg.find('%', found + 1);
+        }
+        std::regex reg(raw_reg.c_str(), std::regex_constants::ECMAScript | std::regex_constants::icase);
+        bool res = std::regex_match(left.get_string(), reg);
+        if((res && comp_ == OP_LIKE) || (!res && comp_ == OP_NOT_LIKE))
+            result = true;
+        else
+            result = false;
+        break;
+    }
     default: {
       LOG_WARN("unsupported comparison. %d", comp_);
       rc = RC::INTERNAL;

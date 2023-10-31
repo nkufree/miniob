@@ -135,5 +135,10 @@ if(comp > COMP_WITH_NULL)
   filter_unit->set_comp(comp);
 
   // 检查两个类型是否能够比较
+  if(filter_unit->comp() == OP_LIKE)
+  {
+    if(filter_unit->right().is_attr || filter_unit->left().field.attr_type() != CHARS || filter_unit->right().value.attr_type() != CHARS)
+        rc = RC::INTERNAL;
+  }
   return rc;
 }

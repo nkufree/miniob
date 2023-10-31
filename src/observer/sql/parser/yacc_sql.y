@@ -108,6 +108,9 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
         MIN_N
         AVG_N
         SUM_N
+        LIKE
+        IN
+        EXISTS
 
 /** union 中定义各种数据类型，真实生成的代码也是union类型，所以不能有非POD类型的数据 **/
 %union {
@@ -190,7 +193,10 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
 %type <insert_values_list>  insert_values_list
 %type <insert_each_value>   insert_each_value
 %type <call_sys_func_attr>  call_sys_func_attr
-%type <sys_func>             sys_func
+%type <sys_func>            sys_func
+%type <comp>                in_or_not
+%type <comp>                exist_or_not
+
 
 %left '+' '-'
 %left '*' '/'
@@ -870,7 +876,27 @@ condition:
       delete $1;
       delete $3;
     }
+    | rel_attr in_or_not LBRACE select_stmt RBRACE
+    {
+
+    }
+    | rel_attr in_or_not LBRACE value value_list RBRACE
+    {
+
+    }
+    | exist_or_not LBRACE select_stmt RBRACE
+    {
+
+    }
     ;
+
+in_or_not :
+    IN { $$ = OP_IN; }
+    | NOT IN { $$ = OP_NOT_IN; }
+
+exist_or_not :
+    EXISTS { $$ = OP_EXISTS; }
+    | NOT EXISTS { $$ = OP_NOT_EXISTS; }
 
 comp_op:
       EQ { $$ = EQUAL_TO; }
@@ -879,6 +905,8 @@ comp_op:
     | LE { $$ = LESS_EQUAL; }
     | GE { $$ = GREAT_EQUAL; }
     | NE { $$ = NOT_EQUAL; }
+    | LIKE { $$ = OP_LIKE; }
+    | NOT LIKE { $$ = OP_NOT_LIKE; }
     ;
 
 load_data_stmt:
